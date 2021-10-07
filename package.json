@@ -1,15 +1,15 @@
 {
     "main": "dist/binding.js",
-    "dependencies": {
-        "node-addon-api": "^3.1.0"
-    },
     "scripts": {
         "pretest": "tsc",
         "test": "node --napi-modules ./test/test_binding.js",
-        "build": "node-gyp rebuild",
-        "build:test": "node-gyp rebuild && npm run test"
+        "build:test": "npm run build && npm test",
+        "build": "cargo-cp-artifact -nc build/xosms-native.node -- cargo build --message-format=json-render-diagnostics",
+        "build-debug": "npm run build --",
+        "build-release": "npm run build -- --release",
+        "install": "npm run build-release",
+        "cargo:test": "cargo test"
     },
-    "gypfile": true,
     "name": "xosms",
     "version": "1.0.0",
     "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
@@ -25,6 +25,7 @@
     "homepage": "https://github.com/NovusTheory/xosms#readme",
     "devDependencies": {
         "@types/node": "^14.14.31",
+        "cargo-cp-artifact": "^0.1.5",
         "typescript": "^4.2.2"
     }
 }

@@ -1,0 +1,24 @@
+[package]
+name = "xosms"
+version = "0.1.0"
+edition = "2018"
+exclude = ["build/xosms-native.node"]
+build = "src/build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = "0.21.1"
+
+[target.'cfg(target_os = "windows")'.build-dependencies]
+windows = "0.21.1"
+
+[dependencies.neon]
+version = "0.9"
+default-features = false
+features = ["napi-6"]

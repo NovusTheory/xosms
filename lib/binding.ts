@@ -1,4 +1,4 @@
-const addon = require('../build/Release/xosms-native');
+const native = require('../build/xosms-native');
 
 // interface IXosmsNative
 // {
@@ -21,6 +21,156 @@ const addon = require('../build/Release/xosms-native');
 // export = Xosms;
 
 interface IMediaService
+{
+    //UpdateButtonEnablement(playButtonEnabled: boolean, pauseButtonEnabled: boolean, previousButtonEnabled: boolean, nextButtonEnabled: boolean): void;
+    //UpdateMediaProperties(mediaType: MediaType, playbackStatus: PlaybackStatus, title: string, albumTitle: string, artist: string, albumArtist: string): void;
+    //UpdateMediaThumbnail(thumbnailType: ThumbnailType, thumbnail: string): void;
+    //UpdateEvents(buttonPressed: Function | null): void;
+    isPlayEnabled(): boolean;
+    setIsPlayEnabled(enabled: boolean): void;
+}
+
+enum MediaType {
+    Unknown = 0,
+    Music = 1,
+    Video = 2,
+    Image = 3
+}
+
+enum PlaybackStatus {
+    Closed = 0,
+    Changing = 1,
+    Stopped = 2,
+    Playing = 3,
+    Paused = 4
+}
+
+enum ThumbnailType {
+    Unknown = 0,
+    File = 1,
+    Uri = 2
+}
+
+class MediaServiceProvider {
+    private _nativeMediaService: IMediaService
+
+    constructor() {
+        this._nativeMediaService = native.createMediaService();
+        /*switch(process.platform) {
+            case "win32":
+                this._native = new addon.WindowsMediaService();
+                break;
+            default:
+                this._native = null;
+                break;
+        }*/
+    }
+
+    // Control
+    public get isEnabled() {
+        return native.mediaServiceIsEnabled(this._nativeMediaService);
+    }
+
+    public set isEnabled(enabled: boolean) {
+        native.mediaServiceSetIsEnabled(this._nativeMediaService, enabled);
+    }
+
+    // Buttons
+    public get playButtonEnabled() {
+        return native.mediaServiceIsPlayEnabled(this._nativeMediaService);
+    }
+
+    public set playButtonEnabled(enabled: boolean) {
+        native.mediaServiceSetIsPlayEnabled(this._nativeMediaService, enabled);
+    }
+
+    public get pauseButtonEnabled() {
+        return native.mediaServiceIsPauseEnabled(this._nativeMediaService);
+    }
+
+    public set pauseButtonEnabled(enabled: boolean) {
+        native.mediaServiceSetIsPauseEnabled(this._nativeMediaService, enabled);
+    }
+
+    public get previousButtonEnabled() {
+        return native.mediaServiceIsPreviousEnabled(this._nativeMediaService);
+    }
+
+    public set previousButtonEnabled(enabled: boolean) {
+        native.mediaServiceSetIsPreviousEnabled(this._nativeMediaService, enabled);
+    }
+
+    public get nextButtonEnabled() {
+        return native.mediaServiceIsNextEnabled(this._nativeMediaService);
+    }
+
+    public set nextButtonEnabled(enabled: boolean) {
+        native.mediaServiceSetIsNextEnabled(this._nativeMediaService, enabled);
+    }
+
+    // Media properties
+    public get mediaType() {
+        return native.mediaServiceGetMediaType(this._nativeMediaService);
+    }
+
+    public set mediaType(type: MediaType) {
+        native.mediaServiceSetMediaType(this._nativeMediaService, type);
+    }
+
+    public get playbackStatus() {
+        return native.mediaServiceGetPlaybackStatus(this._nativeMediaService);
+    }
+
+    public set playbackStatus(status: PlaybackStatus) {
+        native.mediaServiceSetPlaybackStatus(this._nativeMediaService, status);
+    }
+
+    public get title() {
+        return native.mediaServiceGetTitle(this._nativeMediaService);
+    }
+
+    public set title(title: string) {
+        native.mediaServiceSetTitle(this._nativeMediaService, title);
+    }
+
+    public get albumTitle() {
+        return native.mediaServiceGetAlbumTitle(this._nativeMediaService);
+    }
+
+    public set albumTitle(albumTitle: string) {
+        native.mediaServiceSetAlbumTitle(this._nativeMediaService, albumTitle);
+    }
+
+    public get artist() {
+        return native.mediaServiceGetArtist(this._nativeMediaService);
+    }
+
+    public set artist(artist: string) {
+        native.mediaServiceSetArtist(this._nativeMediaService, artist);
+    }
+
+    public get albumArtist() {
+        return native.mediaServiceGetAlbumArtist(this._nativeMediaService);
+    }
+
+    public set albumArtist(albumArtist: string) {
+        native.mediaServiceSetAlbumArtist(this._nativeMediaService, albumArtist);
+    }
+
+    public SetThumbnail(type: ThumbnailType, thumbnail: string) {
+        native.mediaServiceSetThumbnail(this._nativeMediaService, type, thumbnail);
+    }
+
+    // Events
+    /*public set ButtonPressed(callback: Function) {
+        this._buttonPressed = callback;
+        this.NativeUpdateEvents();
+    }*/
+}
+
+export { MediaServiceProvider, MediaType, PlaybackStatus, ThumbnailType }
+
+/*interface IMediaService
 {
     UpdateButtonEnablement(playButtonEnabled: boolean, pauseButtonEnabled: boolean, previousButtonEnabled: boolean, nextButtonEnabled: boolean): void;
     UpdateMediaProperties(mediaType: MediaType, playbackStatus: PlaybackStatus, title: string, albumTitle: string, artist: string, albumArtist: string): void;
@@ -204,4 +354,4 @@ class MediaServiceProvider {
     }
 }
 
-export { MediaServiceProvider, MediaType, PlaybackStatus, ThumbnailType }
+export { MediaServiceProvider, MediaType, PlaybackStatus, ThumbnailType }*/
