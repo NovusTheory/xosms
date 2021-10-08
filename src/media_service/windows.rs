@@ -1,10 +1,13 @@
 windows::include_bindings!();
 
+use neon::event::Channel;
 use neon::prelude::*;
-use Windows::Foundation::Uri;
+use std::borrow::Borrow;
+use Windows::Foundation::{EventRegistrationToken, TypedEventHandler, Uri};
 use Windows::Media::Playback::MediaPlayer;
 use Windows::Media::{
     MediaPlaybackStatus, MediaPlaybackType, MusicDisplayProperties, SystemMediaTransportControls,
+    SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
     SystemMediaTransportControlsDisplayUpdater,
 };
 use Windows::Storage::Streams::RandomAccessStreamReference;
@@ -12,9 +15,21 @@ use Windows::Storage::Streams::RandomAccessStreamReference;
 pub struct MediaService {
     player: MediaPlayer,
     smtc: SystemMediaTransportControls,
+    active_buttons: Vec<EventRegistrationToken>,
+    active_channels: Vec<Channel>,
 }
 
-impl Finalize for MediaService {}
+impl Finalize for MediaService {
+    fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
+        for token in self.active_buttons.iter() {
+            self.smtc.RemoveButtonPressed(token);
+        }
+
+        for channel in self.active_channels.iter() {
+            drop(channel);
+        }
+    }
+}
 
 impl MediaService {
     pub fn new() -> Self {
@@ -28,7 +43,12 @@ impl MediaService {
             .SetIsEnabled(false)
             .expect("Failed to disable CommandManager");
 
-        Self { player, smtc }
+        Self {
+            player,
+            smtc,
+            active_buttons: Vec::new(),
+            active_channels: Vec::new(),
+        }
     }
 
     // region Control
@@ -263,4 +283,63 @@ impl MediaService {
         du.Update();
     }
     // endregion Media Information
+
+    // region Events
+    pub fn set_button_pressed_callback(
+        &mut self,
+        callback: Root<JsFunction>,
+        channel: Channel,
+    ) -> i64 {
+        let callback_arc = std::sync::Arc::new(callback);
+        let callback_eh_clone = callback_arc.clone();
+        let channel_clone = channel.clone();
+        let token = self
+            .smtc
+            .ButtonPressed(TypedEventHandler::<
+                SystemMediaTransportControls,
+                SystemMediaTransportControlsButtonPressedEventArgs,
+            >::new(move |_sender, args| {
+                let callback_js_channel_clone = callback_eh_clone.clone();
+                if let Some(args) = args {
+                    let smtc_button = args.Button().expect("Failed to get button from native TypedEventHandler SystemMediaTransportControlsButtonPressedEventArgs");
+                    channel_clone.send(move |mut cx| {
+                        let callback = callback_js_channel_clone.to_inner(&mut cx);
+                        let this = cx.undefined();
+                        let button = match smtc_button {
+                            SystemMediaTransportControlsButton::Play => "play",
+                            SystemMediaTransportControlsButton::Pause => "pause",
+                            SystemMediaTransportControlsButton::Stop => "stop",
+                            SystemMediaTransportControlsButton::Record => "record",
+                            SystemMediaTransportControlsButton::FastForward => "fastforward",
+                            SystemMediaTransportControlsButton::Rewind => "rewind",
+                            SystemMediaTransportControlsButton::Next => "next",
+                            SystemMediaTransportControlsButton::Previous => "previous",
+                            SystemMediaTransportControlsButton::ChannelUp => "channelup",
+                            SystemMediaTransportControlsButton::ChannelDown => "channeldown",
+                            _ => panic!()
+                        };
+                        let js_button = cx.string(button);
+                        callback.call(&mut cx, this, vec![js_button]);
+
+                        Ok(())
+                    });
+                }
+                Ok(())
+            }))
+            .expect("Failed to bind native ButtonPressed callback");
+        self.active_buttons.push(token);
+        self.active_channels.push(channel);
+        return token.Value;
+    }
+
+    pub fn remove_button_presed_callback(&mut self) {
+        for token in self.active_buttons.iter() {
+            self.smtc.RemoveButtonPressed(token);
+        }
+
+        for channel in self.active_channels.iter() {
+            drop(channel);
+        }
+    }
+    // endregion Events
 }

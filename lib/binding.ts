@@ -162,10 +162,9 @@ class MediaServiceProvider {
     }
 
     // Events
-    /*public set ButtonPressed(callback: Function) {
-        this._buttonPressed = callback;
-        this.NativeUpdateEvents();
-    }*/
+    public set buttonPressed(callback: Function | null) {
+        native.mediaServiceSetButtonCallback(this._nativeMediaService, callback)
+    }
 }
 
 export { MediaServiceProvider, MediaType, PlaybackStatus, ThumbnailType }

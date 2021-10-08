@@ -110,6 +110,10 @@ class MediaServiceProvider {
     SetThumbnail(type, thumbnail) {
         native.mediaServiceSetThumbnail(this._nativeMediaService, type, thumbnail);
     }
+    // Events
+    set buttonPressed(callback) {
+        native.mediaServiceSetButtonCallback(this._nativeMediaService, callback);
+    }
 }
 exports.MediaServiceProvider = MediaServiceProvider;
 /*interface IMediaService

@@ -57,28 +57,17 @@ async function ensureCanModifyMediaServiceProviderProperties() {
     console.log("Title:", instance.title);
     instance.title = "Song Title";
     console.log("Title:", instance.title);
-    instance.SetThumbnail(Xosms.ThumbnailType.Uri, "https://via.placeholder.com/128");
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    instance.SetThumbnail(Xosms.ThumbnailType.Uri, "https://via.placeholder.com/128")
     // Ensures button event attachment works
-    /*instance.ButtonPressed = (button) => { };*/
+    console.log("Adding button press callback");
+    instance.buttonPressed = (button) => {
+        console.log("Pressed button", button)
+    };
+    console.log("Removing button press callback");
+    instance.buttonPressed = null;
 }
-
-/*function ensureMediaServiceProviderThrowsOnButtonCallbackModify() {
-    const instance = new Xosms.MediaServiceProvider();
-    if (!instance) {
-        console.log("Media service provider was not created");
-        return;
-    }
-    // Attach button event
-    instance.ButtonPressed = (button) => { };
-    // Ensure that it throws when trying to modify
-    instance.ButtonPressed = null;
-}*/
 
 assert.doesNotThrow(ensureMediaServiceProviderIsCreated, undefined, "ensureMediaServiceProviderIsCreated threw an error")
 assert.doesNotThrow(ensureCanModifyMediaServiceProviderProperties, undefined, "ensureCanModifyMediaServiceProviderProperties threw an error")
-//assert.throws(ensureMediaServiceProviderThrowsOnButtonCallbackModify, undefined, "ensureMediaServiceProviderThrowsOnButtonCallbackModify did not throw an error")
 
 console.log("Binding tests passed.");
-// Required since binding ButtonPressed in tests will cause the program to never exit
-//process.exit();

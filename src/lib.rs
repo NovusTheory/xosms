@@ -239,6 +239,32 @@ fn media_service_set_thumbnail(mut cx: FunctionContext) -> JsResult<JsUndefined>
 }
 // endregion Media Information
 
+// region Events
+fn media_service_set_button_callback(mut cx: FunctionContext) -> JsResult<JsString> {
+    let service = cx.argument::<BoxedMediaService>(0)?;
+    let mut service = service.borrow_mut();
+
+    // Remove any previous registered callbacks
+    service.remove_button_presed_callback();
+
+    let argument = cx.argument_opt(1);
+    if let Some(callback) = argument {
+        if (callback.is_a::<JsFunction, FunctionContext>(&mut cx)) {
+            let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
+            let mut channel = cx.channel();
+            // This allows the node event loop to exit while the channel is still active
+            channel.unref(&mut cx);
+
+            let token = service.set_button_pressed_callback(callback, channel);
+
+            return Ok(cx.string(token.to_string()));
+        }
+    }
+
+    Ok(cx.string(""))
+}
+// endregion Events
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("createMediaService", create_media_service)?;
@@ -292,5 +318,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("mediaServiceSetTitle", media_service_set_title)?;
     cx.export_function("mediaServiceSetThumbnail", media_service_set_thumbnail)?;
     // endregion Media Information
+    // region Events
+    cx.export_function(
+        "mediaServiceSetButtonCallback",
+        media_service_set_button_callback,
+    )?;
+    // endregion Events
     Ok(())
 }

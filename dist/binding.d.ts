@@ -42,5 +42,6 @@ declare class MediaServiceProvider {
     get albumArtist(): string;
     set albumArtist(albumArtist: string);
     SetThumbnail(type: ThumbnailType, thumbnail: string): void;
+    set buttonPressed(callback: Function | null);
 }
 export { MediaServiceProvider, MediaType, PlaybackStatus, ThumbnailType };
