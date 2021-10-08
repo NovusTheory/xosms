@@ -157,7 +157,7 @@ class MediaServiceProvider {
         native.mediaServiceSetAlbumArtist(this._nativeMediaService, albumArtist);
     }
 
-    public SetThumbnail(type: ThumbnailType, thumbnail: string) {
+    public setThumbnail(type: ThumbnailType, thumbnail: string) {
         native.mediaServiceSetThumbnail(this._nativeMediaService, type, thumbnail);
     }
 
