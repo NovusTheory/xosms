@@ -18,6 +18,7 @@ jobs:
           node-version: 14
       - run: yarn install --frozen-lockfile
       - run: yarn build
+      - run: yarn build:tsc
       - run: yarn test
       - run: yarn cargo:test
 
@@ -33,6 +34,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - run: yarn install --frozen-lockfile
       - run: yarn build
+      - run: yarn build:tsc
       - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
@@ -52,6 +54,7 @@ jobs:
           registry-url: https://npm.pkg.github.com/
       - run: yarn install --frozen-lockfile
       - run: yarn build
+      - run: yarn build:tsc
       - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
