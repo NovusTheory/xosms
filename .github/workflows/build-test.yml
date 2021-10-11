@@ -30,7 +30,7 @@ jobs:
     - run: yarn build
     - run: yarn build:lib
     - name: Library Test
-      if: ${{ matrix.ois != 'ubuntu-latest' }} # DBus doesn't exist in CI and this test will always fail
+      if: ${{ matrix.os != 'ubuntu-latest' }} # DBus doesn't exist in CI and this test will always fail
       run: yarn test
     - name: Native Test
       run: yarn cargo:test
