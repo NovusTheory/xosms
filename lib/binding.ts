@@ -30,16 +30,8 @@ enum ThumbnailType {
 class MediaServiceProvider {
     private _nativeMediaService: IMediaService
 
-    constructor() {
-        this._nativeMediaService = native.createMediaService();
-        /*switch(process.platform) {
-            case "win32":
-                this._native = new addon.WindowsMediaService();
-                break;
-            default:
-                this._native = null;
-                break;
-        }*/
+    constructor(serviceName: string, identity: string) {
+        this._nativeMediaService = native.createMediaService(serviceName, identity);
     }
 
     // Control
@@ -131,6 +123,14 @@ class MediaServiceProvider {
 
     public set albumArtist(albumArtist: string) {
         native.mediaServiceSetAlbumArtist(this._nativeMediaService, albumArtist);
+    }
+
+    public get trackId() {
+        return native.mediaServiceGetTrackId(this._nativeMediaService);
+    }
+
+    public set trackId(trackId: string) {
+        native.mediaServiceSetTrackId(this._nativeMediaService, trackId);
     }
 
     public setThumbnail(type: ThumbnailType, thumbnail: string) {

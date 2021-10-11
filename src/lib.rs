@@ -1,5 +1,9 @@
 #[cfg_attr(target_os = "windows", path = "media_service/windows.rs")]
-#[cfg_attr(not(target_os = "windows"), path = "media_service/unknown.rs")]
+#[cfg_attr(target_os = "linux", path = "media_service/linux/mod.rs")]
+#[cfg_attr(
+    not(any(target_os = "windows", target_os = "linux")),
+    path = "media_service/unsupported.rs"
+)]
 mod media_service;
 
 use media_service::MediaService;
@@ -9,7 +13,13 @@ use std::cell::RefCell;
 type BoxedMediaService = JsBox<RefCell<MediaService>>;
 
 fn create_media_service(mut cx: FunctionContext) -> JsResult<BoxedMediaService> {
-    let service = RefCell::new(MediaService::new());
+    let service_name = cx.argument::<JsString>(0)?;
+    let identity = cx.argument::<JsString>(1)?;
+
+    let service = RefCell::new(MediaService::new(
+        service_name.value(&mut cx),
+        identity.value(&mut cx),
+    ));
     Ok(cx.boxed(service))
 }
 
@@ -227,6 +237,25 @@ fn media_service_set_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
+fn media_service_get_track_id(mut cx: FunctionContext) -> JsResult<JsString> {
+    let service = cx.argument::<BoxedMediaService>(0)?;
+    let service = service.borrow();
+
+    let track_id = service.get_track_id();
+
+    Ok(cx.string(track_id))
+}
+
+fn media_service_set_track_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let service = cx.argument::<BoxedMediaService>(0)?;
+    let service = service.borrow_mut();
+
+    let track_id = cx.argument::<JsString>(1)?.value(&mut cx);
+    service.set_track_id(track_id);
+
+    Ok(cx.undefined())
+}
+
 fn media_service_set_thumbnail(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
     let service = service.borrow_mut();
@@ -316,6 +345,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("mediaServiceSetAlbumTitle", media_service_set_album_title)?;
     cx.export_function("mediaServiceGetTitle", media_service_get_title)?;
     cx.export_function("mediaServiceSetTitle", media_service_set_title)?;
+    cx.export_function("mediaServiceGetTrackId", media_service_get_track_id)?;
+    cx.export_function("mediaServiceSetTrackId", media_service_set_track_id)?;
     cx.export_function("mediaServiceSetThumbnail", media_service_set_thumbnail)?;
     // endregion Media Information
     // region Events

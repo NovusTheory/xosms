@@ -4,12 +4,12 @@ const assert = require("assert");
 assert(Xosms, "The expected module is undefined");
 
 function ensureMediaServiceProviderIsCreated() {
-    const instance = new Xosms.MediaServiceProvider();
+    const instance = new Xosms.MediaServiceProvider("xosms-test-1", "Xosms Binding Test");
     assert(instance, "Media service provider was not created")
 }
 
 async function ensureCanModifyMediaServiceProviderProperties() {
-    const instance = new Xosms.MediaServiceProvider();
+    const instance = new Xosms.MediaServiceProvider("xosms-test-2", "Xosms Binding Test");
     assert(instance, "Media service provider was not created")
     // Ensures we can modify control
     console.log("Service Enabled:", instance.isEnabled);
@@ -57,7 +57,10 @@ async function ensureCanModifyMediaServiceProviderProperties() {
     console.log("Title:", instance.title);
     instance.title = "Song Title";
     console.log("Title:", instance.title);
-    instance.SetThumbnail(Xosms.ThumbnailType.Uri, "https://via.placeholder.com/128")
+    console.log("TrackId:", instance.trackId);
+    instance.trackId = "TEST";
+    console.log("TrackId:", instance.trackId);
+    instance.setThumbnail(Xosms.ThumbnailType.Uri, "https://via.placeholder.com/128")
     // Ensures button event attachment works
     console.log("Adding button press callback");
     instance.buttonPressed = (button) => {
