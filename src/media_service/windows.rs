@@ -32,7 +32,7 @@ impl Finalize for MediaService {
 }
 
 impl MediaService {
-    pub fn new() -> Self {
+    pub fn new(service_name: String, identity: String) -> Self {
         let player = MediaPlayer::new().expect("Failed to create MediaPlayer");
         let smtc = player
             .SystemMediaTransportControls()
@@ -265,6 +265,12 @@ impl MediaService {
         mp.SetTitle(title);
         du.Update();
     }
+
+    pub fn get_track_id(&self) -> String {
+        return "".to_string();
+    }
+
+    pub fn set_track_id(&self, title: String) {}
 
     pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
         let du = self
