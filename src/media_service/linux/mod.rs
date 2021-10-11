@@ -269,7 +269,7 @@ impl MediaService {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:artist".to_string(),
-                dbus::arg::Variant(Box::new(artist.clone())),
+                dbus::arg::Variant(Box::new(vec![artist.clone()])),
             );
         }
         {
@@ -295,7 +295,7 @@ impl MediaService {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:albumArtist".to_string(),
-                dbus::arg::Variant(Box::new(album_artist.clone())),
+                dbus::arg::Variant(Box::new(vec![album_artist.clone()])),
             );
         }
         {
