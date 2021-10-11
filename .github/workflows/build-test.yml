@@ -23,6 +23,8 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '14'
+    - name: Install libdbus
+      run: apt install libdbus-1-dev pkg-config -y 
     - run: yarn install --frozen-lockfile
     - run: yarn build
     - run: yarn build:lib
