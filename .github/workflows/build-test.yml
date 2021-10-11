@@ -29,7 +29,8 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: yarn build
     - run: yarn build:lib
-    - name: Test
+    - name: Library Test
       if: ${{ matrix.ois != 'ubuntu-latest' }} # DBus doesn't exist in CI and this test will always fail
       run: yarn test
-    - run: yarn cargo:test
+    - name: Native Test
+      run: yarn cargo:test
