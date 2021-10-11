@@ -20,7 +20,6 @@ jobs:
         with:
           node-version: 14
       - name: Install libdbus
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get install libdbus-1-dev pkg-config -y
       - run: yarn install --frozen-lockfile
       - run: yarn build
@@ -42,7 +41,6 @@ jobs:
           node-version: 14
           registry-url: https://registry.npmjs.org/
       - name: Install libdbus
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get install libdbus-1-dev pkg-config -y
       - run: yarn install --frozen-lockfile
       - run: yarn build
@@ -65,7 +63,6 @@ jobs:
           node-version: 14
           registry-url: https://npm.pkg.github.com/
       - name: Install libdbus
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get install libdbus-1-dev pkg-config -y
       - run: yarn install --frozen-lockfile
       - run: yarn build
