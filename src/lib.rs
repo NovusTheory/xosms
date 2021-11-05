@@ -1,7 +1,12 @@
+#[cfg(target_os = "macos")]
+#[macro_use]
+extern crate objc;
+
 #[cfg_attr(target_os = "windows", path = "media_service/windows.rs")]
 #[cfg_attr(target_os = "linux", path = "media_service/linux/mod.rs")]
+#[cfg_attr(target_os = "macos", path = "media_service/macos/mod.rs")]
 #[cfg_attr(
-    not(any(target_os = "windows", target_os = "linux")),
+    not(any(target_os = "windows", target_os = "linux", target_os = "macos")),
     path = "media_service/unsupported.rs"
 )]
 mod media_service;
@@ -278,7 +283,7 @@ fn media_service_set_button_callback(mut cx: FunctionContext) -> JsResult<JsStri
 
     let argument = cx.argument_opt(1);
     if let Some(callback) = argument {
-        if (callback.is_a::<JsFunction, FunctionContext>(&mut cx)) {
+        if callback.is_a::<JsFunction, FunctionContext>(&mut cx) {
             let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
             let mut channel = cx.channel();
             // This allows the node event loop to exit while the channel is still active
