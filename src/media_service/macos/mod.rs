@@ -13,18 +13,29 @@ use bindings::*;
 use neon::event::Channel;
 use neon::prelude::*;
 
+use fruity::foundation::NSString;
+
 const UTF8_ENCODING: NSUInteger = 4;
 
-pub struct MediaService {}
+pub struct MediaService {
+    nowPlayingInfoCenter: MPNowPlayingInfoCenter,
+    remoteCommandCenter: MPRemoteCommandCenter,
+    playingInfoDict: NSMutableDictionary
+}
 
+unsafe impl Send for MediaService {} //TODO: Research deletion of that
 impl Finalize for MediaService {}
 
 impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
+        let playingInfoDict: NSMutableDictionary;
+        let nowPlayingInfoCenter: MPNowPlayingInfoCenter;
+        let remoteCommandCenter: MPRemoteCommandCenter;
+
         unsafe {
-            println!("Generating NowPlaying!");
-            let now_playing: MPNowPlayingInfoCenter = MPNowPlayingInfoCenter::defaultCenter();
-            let remote: MPRemoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
+            nowPlayingInfoCenter = MPNowPlayingInfoCenter::defaultCenter();
+            remoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
+            println!("Fruity set author 123!");
             
             let commandHandler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
                 // println!("commandHelper: {}", type_name_of_val(&e));
@@ -34,39 +45,21 @@ impl MediaService {
             let commandHandler = commandHandler.copy();
             
             println!("Debug 0");
-            remote.playCommand().addTargetWithHandler_(&*commandHandler);
-            remote.pauseCommand().addTargetWithHandler_(&*commandHandler);
+            remoteCommandCenter.playCommand().addTargetWithHandler_(&*commandHandler);
+            remoteCommandCenter.pauseCommand().addTargetWithHandler_(&*commandHandler);
 
             println!("Debug 1");
-            now_playing.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
+            nowPlayingInfoCenter.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
 
-            let dictionary = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
+            playingInfoDict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
                 &NSMutableDictionary::alloc(),
             ));
-            // let song_title_str = "Title";
-            // let song_title = NSString::alloc().initWithBytes_length_encoding_(
-            //     song_title_str.as_ptr() as *mut std::ffi::c_void,
-            //     song_title_str.len().try_into().unwrap(),
-            //     UTF8_ENCODING,
-            // );
-            // let song_artist_str = "Artist";
-            // let song_artist = NSString::alloc().initWithBytes_length_encoding_(
-            //     song_artist_str.as_ptr() as *mut std::ffi::c_void,
-            //     song_artist_str.len().try_into().unwrap(),
-            //     UTF8_ENCODING,
-            // );
-            // let song_album_title_str = "Album Title";
-            // let song_album_title = NSString::alloc().initWithBytes_length_encoding_(
-            //     song_album_title_str.as_ptr() as *mut std::ffi::c_void,
-            //     song_album_title_str.len().try_into().unwrap(),
-            //     UTF8_ENCODING,
-            // );
 
-            println!("Debug befor fruity usage");
+            println!("Debug before fruity usage");
 
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
 
             // /*dictionary.setObject_forKey_(song_title, MPMediaItemPropertyTitle.0 as *mut u64);
             // dictionary.setObject_forKey_(song_artist, MPMediaItemPropertyArtist.0 as *mut u64);
@@ -75,9 +68,9 @@ impl MediaService {
             //     MPMediaItemPropertyAlbumTitle.0 as *mut u64,
             // );*/
 
-            now_playing
+            nowPlayingInfoCenter
                 .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
-            now_playing.setNowPlayingInfo_(NSDictionary(dictionary.0));
+                nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(playingInfoDict.0));
             // println!("Generated NowPlaying {:p}", now_playing.0);
 
             // let info = now_playing.nowPlayingInfo();
@@ -92,7 +85,11 @@ impl MediaService {
 
             //now_playing.dealloc();
         }
-        Self {}
+        Self {
+            nowPlayingInfoCenter,
+            remoteCommandCenter,
+            playingInfoDict
+        }
     }
 
     // region Control
@@ -155,7 +152,13 @@ impl MediaService {
         // return artist;
     }
 
-    pub fn set_artist(&self, _artist: String) {
+    pub fn set_artist(&self, artist: String) {
+        println!("Sent artist called !");
+        unsafe {
+            let _result: objc::runtime::Object = msg_send!(self.playingInfoDict.0 , setObject : NSString::from(artist.as_str()) forKey : MPMediaItemPropertyTitle.0);
+            println!("Sent artist moddle");
+            self.nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(self.playingInfoDict.0));
+        }
         // let nowPlayingInfo;
         // unsafe {
         //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
