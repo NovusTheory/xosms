@@ -5,7 +5,7 @@ use std::ffi::CStr;
 use std::ops::Deref;
 use block::ConcreteBlock;
 
-use std::any::type_name_of_val; //Debug
+// use std::any::type_name_of_val; //Debug
 
 use std::os::raw::c_char;
 
@@ -27,7 +27,8 @@ impl MediaService {
             let remote: MPRemoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
             
             let commandHandler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
-                println!("commandHelper: {}", type_name_of_val(&e));
+                // println!("commandHelper: {}", type_name_of_val(&e));
+                println!("Callback handler executed");
                 return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
             });
             let commandHandler = commandHandler.copy();
@@ -42,28 +43,30 @@ impl MediaService {
             let dictionary = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
                 &NSMutableDictionary::alloc(),
             ));
-            let song_title_str = "Title";
-            let song_title = NSString::alloc().initWithBytes_length_encoding_(
-                song_title_str.as_ptr() as *mut std::ffi::c_void,
-                song_title_str.len().try_into().unwrap(),
-                UTF8_ENCODING,
-            );
-            let song_artist_str = "Artist";
-            let song_artist = NSString::alloc().initWithBytes_length_encoding_(
-                song_artist_str.as_ptr() as *mut std::ffi::c_void,
-                song_artist_str.len().try_into().unwrap(),
-                UTF8_ENCODING,
-            );
-            let song_album_title_str = "Album Title";
-            let song_album_title = NSString::alloc().initWithBytes_length_encoding_(
-                song_album_title_str.as_ptr() as *mut std::ffi::c_void,
-                song_album_title_str.len().try_into().unwrap(),
-                UTF8_ENCODING,
-            );
+            // let song_title_str = "Title";
+            // let song_title = NSString::alloc().initWithBytes_length_encoding_(
+            //     song_title_str.as_ptr() as *mut std::ffi::c_void,
+            //     song_title_str.len().try_into().unwrap(),
+            //     UTF8_ENCODING,
+            // );
+            // let song_artist_str = "Artist";
+            // let song_artist = NSString::alloc().initWithBytes_length_encoding_(
+            //     song_artist_str.as_ptr() as *mut std::ffi::c_void,
+            //     song_artist_str.len().try_into().unwrap(),
+            //     UTF8_ENCODING,
+            // );
+            // let song_album_title_str = "Album Title";
+            // let song_album_title = NSString::alloc().initWithBytes_length_encoding_(
+            //     song_album_title_str.as_ptr() as *mut std::ffi::c_void,
+            //     song_album_title_str.len().try_into().unwrap(),
+            //     UTF8_ENCODING,
+            // );
 
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : song_title forKey : MPMediaItemPropertyTitle.0);
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : song_artist forKey : MPMediaItemPropertyArtist.0);
-            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : song_album_title forKey : MPMediaItemPropertyAlbumTitle.0);
+            println!("Debug befor fruity usage");
+
+            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
+            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
+            let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
 
             // /*dictionary.setObject_forKey_(song_title, MPMediaItemPropertyTitle.0 as *mut u64);
             // dictionary.setObject_forKey_(song_artist, MPMediaItemPropertyArtist.0 as *mut u64);

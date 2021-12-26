@@ -15,6 +15,7 @@ crate-type = ["cdylib"]
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"
 block = "0.1.6"
+fruity = { version = "0.2.0", features = ["foundation"] }
 
 [target.'cfg(target_os = "macos")'.build-dependencies]
 bindgen = "0.59.1"

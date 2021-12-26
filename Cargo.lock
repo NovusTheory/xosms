@@ -165,6 +165,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fruity"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "273729867584f17b39ea7e3f0e14f8abbba2e2a856d674b8dbf8ded111cb788e"
+
+[[package]]
 name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -575,6 +581,7 @@ dependencies = [
  "block",
  "dbus",
  "dbus-crossroads",
+ "fruity",
  "neon",
  "objc",
  "windows",

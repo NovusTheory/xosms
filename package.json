@@ -5,7 +5,7 @@
         "test": "node --napi-modules ./test/test_binding.js",
         "build:lib": "tsc",
         "build:test": "npm run build && npm test",
-        "build": "cargo-cp-artifact -nc build/xosms-native.node -- cargo build --message-format=json-render-diagnostics --target=aarch64-apple-darwin",
+        "build": "cargo-cp-artifact -nc build/xosms-native.node -- cargo build --message-format=json-render-diagnostics --target=x86_64-apple-darwin",
         "build-debug": "npm run build --",
         "build-release": "npm run build -- --release",
         "install": "npm run build-release",
