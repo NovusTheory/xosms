@@ -1,3 +1,5 @@
+#![feature(type_name_of_val)] //Debug during dev
+
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;

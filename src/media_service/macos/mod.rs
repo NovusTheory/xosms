@@ -3,6 +3,9 @@ mod bindings;
 use std::convert::TryInto;
 use std::ffi::CStr;
 use std::ops::Deref;
+use block::ConcreteBlock;
+
+use std::any::type_name_of_val; //Debug
 
 use bindings::*;
 use neon::event::Channel;
@@ -17,40 +20,38 @@ impl Finalize for MediaService {}
 impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
         unsafe {
-            println!("Generating NowPlaying");
+            println!("Generating NowPlaying!");
             let now_playing: MPNowPlayingInfoCenter = MPNowPlayingInfoCenter::defaultCenter();
-
             let remote: MPRemoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
-            remote.playCommand().setEnabled_(true as i8);
-            remote.pauseCommand().setEnabled_(true as i8);
-            remote.togglePlayPauseCommand().setEnabled_(true as i8);
-            remote
-                .changePlaybackPositionCommand()
-                .setEnabled_(false as i8);
-            remote.changePlaybackRateCommand().setEnabled_(false as i8);
-            remote.changeRepeatModeCommand().setEnabled_(false as i8);
-            remote.changeShuffleModeCommand().setEnabled_(false as i8);
-            remote.nextTrackCommand().setEnabled_(true as i8);
-            remote.previousTrackCommand().setEnabled_(true as i8);
+            
+            let commandHandler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
+                println!("commandHelper: {}", type_name_of_val(&e));
+                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+            });
+            let commandHandler = commandHandler.copy();
+            
+            println!("Debug 0");
+            remote.playCommand().addTargetWithHandler_(&*commandHandler);
+            remote.pauseCommand().addTargetWithHandler_(&*commandHandler);
+
+            println!("Debug 1");
+            now_playing.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
 
             let dictionary = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
                 &NSMutableDictionary::alloc(),
             ));
-
             let song_title_str = "Title";
             let song_title = NSString::alloc().initWithBytes_length_encoding_(
                 song_title_str.as_ptr() as *mut std::ffi::c_void,
                 song_title_str.len().try_into().unwrap(),
                 UTF8_ENCODING,
             );
-
             let song_artist_str = "Artist";
             let song_artist = NSString::alloc().initWithBytes_length_encoding_(
                 song_artist_str.as_ptr() as *mut std::ffi::c_void,
                 song_artist_str.len().try_into().unwrap(),
                 UTF8_ENCODING,
             );
-
             let song_album_title_str = "Album Title";
             let song_album_title = NSString::alloc().initWithBytes_length_encoding_(
                 song_album_title_str.as_ptr() as *mut std::ffi::c_void,
@@ -62,27 +63,27 @@ impl MediaService {
             let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : song_artist forKey : MPMediaItemPropertyArtist.0);
             let _result: objc::runtime::Object = msg_send!(dictionary.0 , setObject : song_album_title forKey : MPMediaItemPropertyAlbumTitle.0);
 
-            /*dictionary.setObject_forKey_(song_title, MPMediaItemPropertyTitle.0 as *mut u64);
-            dictionary.setObject_forKey_(song_artist, MPMediaItemPropertyArtist.0 as *mut u64);
-            dictionary.setObject_forKey_(
-                song_album_title,
-                MPMediaItemPropertyAlbumTitle.0 as *mut u64,
-            );*/
+            // /*dictionary.setObject_forKey_(song_title, MPMediaItemPropertyTitle.0 as *mut u64);
+            // dictionary.setObject_forKey_(song_artist, MPMediaItemPropertyArtist.0 as *mut u64);
+            // dictionary.setObject_forKey_(
+            //     song_album_title,
+            //     MPMediaItemPropertyAlbumTitle.0 as *mut u64,
+            // );*/
 
             now_playing
                 .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
             now_playing.setNowPlayingInfo_(NSDictionary(dictionary.0));
-            println!("Generated NowPlaying {:p}", now_playing.0);
+            // println!("Generated NowPlaying {:p}", now_playing.0);
 
-            let info = now_playing.nowPlayingInfo();
-            println!("NowPlaying info {:p}", info.0);
-            let _title: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyTitle.0);
-            let _artist: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyArtist.0);
-            let _album_title: NSString =
-                msg_send!(info.0, objectForKey: MPMediaItemPropertyAlbumTitle.0);
-            println!("Title {:?}", CStr::from_ptr(_title.cString()));
-            println!("Artist {:?}", CStr::from_ptr(_artist.cString()));
-            println!("Album Title {:?}", CStr::from_ptr(_album_title.cString()));
+            // let info = now_playing.nowPlayingInfo();
+            // println!("NowPlaying info {:p}", info.0);
+            // let _title: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyTitle.0);
+            // let _artist: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyArtist.0);
+            // let _album_title: NSString =
+            //     msg_send!(info.0, objectForKey: MPMediaItemPropertyAlbumTitle.0);
+            // println!("Title {:?}", CStr::from_ptr(_title.cString()));
+            // println!("Artist {:?}", CStr::from_ptr(_artist.cString()));
+            // println!("Album Title {:?}", CStr::from_ptr(_album_title.cString()));
 
             //now_playing.dealloc();
         }
