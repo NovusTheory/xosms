@@ -7,6 +7,8 @@ use block::ConcreteBlock;
 
 use std::any::type_name_of_val; //Debug
 
+use std::os::raw::c_char;
+
 use bindings::*;
 use neon::event::Channel;
 use neon::prelude::*;
@@ -138,10 +140,26 @@ impl MediaService {
     pub fn set_playback_status(&self, _status: i32) {}
 
     pub fn get_artist(&self) -> String {
+        // let nowPlayingInfo;
+        // unsafe {
+        //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
+        // }
+
         return "".to_string();
+        // let artist = .to_string();
+        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist.0) UTF8String]);
+        // println!("Artist get value: {}", artist);
+        // return artist;
     }
 
-    pub fn set_artist(&self, _artist: String) {}
+    pub fn set_artist(&self, _artist: String) {
+        // let nowPlayingInfo;
+        // unsafe {
+        //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
+        // }
+        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist.0) UTF8String]);
+        // println!("Artist set old value: {}", artist);
+    }
 
     pub fn get_album_artist(&self) -> String {
         return "".to_string();
