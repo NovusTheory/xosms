@@ -35,7 +35,7 @@ impl MediaService {
         unsafe {
             nowPlayingInfoCenter = MPNowPlayingInfoCenter::defaultCenter();
             remoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
-            println!("Fruity set author 123!");
+            println!("Fruity set author 1234!");
             
             let commandHandler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
                 // println!("commandHelper: {}", type_name_of_val(&e));
@@ -44,7 +44,7 @@ impl MediaService {
             });
             let commandHandler = commandHandler.copy();
             
-            println!("Debug 0");
+            println!("Debug");
             remoteCommandCenter.playCommand().addTargetWithHandler_(&*commandHandler);
             remoteCommandCenter.pauseCommand().addTargetWithHandler_(&*commandHandler);
 
@@ -57,33 +57,13 @@ impl MediaService {
 
             println!("Debug before fruity usage");
 
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict.0 , setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
-
-            // /*dictionary.setObject_forKey_(song_title, MPMediaItemPropertyTitle.0 as *mut u64);
-            // dictionary.setObject_forKey_(song_artist, MPMediaItemPropertyArtist.0 as *mut u64);
-            // dictionary.setObject_forKey_(
-            //     song_album_title,
-            //     MPMediaItemPropertyAlbumTitle.0 as *mut u64,
-            // );*/
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
+            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
 
             nowPlayingInfoCenter
                 .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
                 nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(playingInfoDict.0));
-            // println!("Generated NowPlaying {:p}", now_playing.0);
-
-            // let info = now_playing.nowPlayingInfo();
-            // println!("NowPlaying info {:p}", info.0);
-            // let _title: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyTitle.0);
-            // let _artist: NSString = msg_send!(info.0, objectForKey: MPMediaItemPropertyArtist.0);
-            // let _album_title: NSString =
-            //     msg_send!(info.0, objectForKey: MPMediaItemPropertyAlbumTitle.0);
-            // println!("Title {:?}", CStr::from_ptr(_title.cString()));
-            // println!("Artist {:?}", CStr::from_ptr(_artist.cString()));
-            // println!("Album Title {:?}", CStr::from_ptr(_album_title.cString()));
-
-            //now_playing.dealloc();
         }
         Self {
             nowPlayingInfoCenter,
@@ -140,22 +120,23 @@ impl MediaService {
     pub fn set_playback_status(&self, _status: i32) {}
 
     pub fn get_artist(&self) -> String {
-        // let nowPlayingInfo;
-        // unsafe {
-        //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
-        // }
+        println!("Get artist111");
+        let artist: NSString;
+        unsafe {
+            let info = self.nowPlayingInfoCenter.nowPlayingInfo().0;
+            println!("NowPlaying info {:p}", info);
+            artist = msg_send!(info, objectForKey: MPMediaItemPropertyArtist.0);
+            println!("Artists {}", artist)
+        }
 
-        return "".to_string();
-        // let artist = .to_string();
-        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist.0) UTF8String]);
-        // println!("Artist get value: {}", artist);
-        // return artist;
+        return artist.to_string();
     }
 
     pub fn set_artist(&self, artist: String) {
         println!("Sent artist called !");
+        println!("Read old: {}", self.get_artist());
         unsafe {
-            let _result: objc::runtime::Object = msg_send!(self.playingInfoDict.0 , setObject : NSString::from(artist.as_str()) forKey : MPMediaItemPropertyTitle.0);
+            let _result: objc::runtime::Object = msg_send!(self.playingInfoDict, setObject : NSString::from(artist.as_str()) forKey : MPMediaItemPropertyTitle.0);
             println!("Sent artist moddle");
             self.nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(self.playingInfoDict.0));
         }
@@ -163,7 +144,7 @@ impl MediaService {
         // unsafe {
         //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
         // }
-        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist.0) UTF8String]);
+        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist) UTF8String]);
         // println!("Artist set old value: {}", artist);
     }
 
