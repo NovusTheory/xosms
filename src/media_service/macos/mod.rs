@@ -18,6 +18,15 @@ enum MPMediaItemProperty {
     TrackID
 }
 
+// pub struct MPRemoteEventCallback {
+//     callback: Root<JsFunction>,
+//     channel: Channel,
+// }
+
+// impl MPRemoteEventCallback {
+
+// }
+
 pub struct MediaService {
     info_center: MPNowPlayingInfoCenter,
     playing_info_dict: NSMutableDictionary
@@ -30,44 +39,9 @@ impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
         let playing_info_dict: NSMutableDictionary;
         let info_center: MPNowPlayingInfoCenter;
-        let remote_command_center: MPRemoteCommandCenter;
 
         unsafe {
             info_center = MPNowPlayingInfoCenter::defaultCenter();
-            remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            println!("Fruity set author 1234!");
-            
-            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus {
-                let command: MPRemoteCommand = msg_send!(e, command);
-                let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-                if command.0 == remote_command_center.playCommand().0 {
-                    println!("Command playCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.pauseCommand().0 {
-                    println!("Command pauseCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.nextTrackCommand().0 {
-                    println!("Command nextTrackCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.previousTrackCommand().0 {
-                    println!("Command previousTrackCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                println!("MPRemoteCommand unknown");
-                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
-            });
-            let command_handler = command_handler.copy();
-            
-            println!("Debug");
-            remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
-
-            println!("Debug 1");
             info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
 
             playing_info_dict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
@@ -213,6 +187,37 @@ impl MediaService {
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> i64 {
+        unsafe {
+            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus {
+                let command: MPRemoteCommand = msg_send!(e, command);
+                let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+                if command.0 == remote_command_center.playCommand().0 {
+                    println!("Command123 playCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.pauseCommand().0 {
+                    println!("Command123 pauseCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.nextTrackCommand().0 {
+                    println!("Command123 nextTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.previousTrackCommand().0 {
+                    println!("Command123 previousTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                println!("MPRemoteCommand unknown");
+                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
+            });
+            let command_handler = command_handler.copy();
+            remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
+            
+            remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
+        }
         return -1;
     }
 
