@@ -17,6 +17,13 @@ use fruity::foundation::NSString;
 
 const UTF8_ENCODING: NSUInteger = 4;
 
+enum MPMediaItemProperty {
+    Artist,
+    Title,
+    AlbumArtist,
+    AlbumTitle
+}
+
 pub struct MediaService {
     nowPlayingInfoCenter: MPNowPlayingInfoCenter,
     remoteCommandCenter: MPRemoteCommandCenter,
@@ -55,12 +62,6 @@ impl MediaService {
                 &NSMutableDictionary::alloc(),
             ));
 
-            println!("Debug before fruity usage");
-
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Title") forKey : MPMediaItemPropertyTitle.0);
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Artist") forKey : MPMediaItemPropertyArtist.0);
-            let _result: objc::runtime::Object = msg_send!(playingInfoDict, setObject : fruity::nsstring!("My Album") forKey : MPMediaItemPropertyAlbumTitle.0);
-
             nowPlayingInfoCenter
                 .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
                 nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(playingInfoDict.0));
@@ -69,6 +70,28 @@ impl MediaService {
             nowPlayingInfoCenter,
             remoteCommandCenter,
             playingInfoDict
+        }
+    }
+
+    unsafe fn set_metadata(&self, key: MPMediaItemProperty, value: NSString) //TODO: make it work with NSObject
+    {
+        let keyO;
+
+        match key {
+            MPMediaItemProperty::Artist => keyO = MPMediaItemPropertyArtist.0,
+            MPMediaItemProperty::Title => keyO = MPMediaItemPropertyTitle.0,
+            MPMediaItemProperty::AlbumArtist => keyO = MPMediaItemPropertyAlbumArtist.0,
+            MPMediaItemProperty::AlbumTitle => keyO = MPMediaItemPropertyAlbumTitle.0,
+        }
+        
+        let _result: objc::runtime::Object = msg_send!(self.playingInfoDict, setObject : value forKey : keyO);
+        self.nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(self.playingInfoDict.0));
+    }
+
+    fn set_metadata_str(&self, key: MPMediaItemProperty, value: String)
+    {
+        unsafe {
+            self.set_metadata(key, NSString::from(value.as_str()))
         }
     }
 
@@ -132,39 +155,33 @@ impl MediaService {
         return artist.to_string();
     }
 
-    pub fn set_artist(&self, artist: String) {
-        println!("Sent artist called !");
-        println!("Read old: {}", self.get_artist());
-        unsafe {
-            let _result: objc::runtime::Object = msg_send!(self.playingInfoDict, setObject : NSString::from(artist.as_str()) forKey : MPMediaItemPropertyTitle.0);
-            println!("Sent artist moddle");
-            self.nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(self.playingInfoDict.0));
-        }
-        // let nowPlayingInfo;
-        // unsafe {
-        //     nowPlayingInfo = MPNowPlayingInfoCenter::defaultCenter().nowPlayingInfo();
-        // }
-        // std::string artist = std::string([nowPlayingInfo.objectForKey_(MPMediaItemPropertyArtist) UTF8String]);
-        // println!("Artist set old value: {}", artist);
+    pub fn set_artist(&self, _artist: String) {
+        self.set_metadata_str(MPMediaItemProperty::Artist, _artist)
     }
 
     pub fn get_album_artist(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_album_artist(&self, _album_artist: String) {}
+    pub fn set_album_artist(&self, _album_artist: String) {
+        self.set_metadata_str(MPMediaItemProperty::AlbumArtist, _album_artist)
+    }
 
     pub fn get_album_title(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_album_title(&self, _album_title: String) {}
+    pub fn set_album_title(&self, _album_title: String) {
+        self.set_metadata_str(MPMediaItemProperty::AlbumTitle, _album_title)
+    }
 
     pub fn get_title(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_title(&self, _title: String) {}
+    pub fn set_title(&self, _title: String) {
+        self.set_metadata_str(MPMediaItemProperty::Title, _title)
+    }
 
     pub fn get_track_id(&self) -> String {
         return "".to_string();
