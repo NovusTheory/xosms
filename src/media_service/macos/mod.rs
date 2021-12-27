@@ -2,7 +2,7 @@ mod bindings;
 
 use block::ConcreteBlock;
 
-// use std::any::type_name_of_val; //Debug
+use std::any::type_name_of_val; //Debug
 
 use bindings::*;
 use neon::event::Channel;
@@ -37,16 +37,35 @@ impl MediaService {
             remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
             println!("Fruity set author 1234!");
             
-            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
-                // println!("commandHelper: {}", type_name_of_val(&e));
-                println!("Callback handler executed");
-                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus {
+                let command: MPRemoteCommand = msg_send!(e, command);
+                let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+                if command.0 == remote_command_center.playCommand().0 {
+                    println!("Command playCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.pauseCommand().0 {
+                    println!("Command pauseCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.nextTrackCommand().0 {
+                    println!("Command nextTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.previousTrackCommand().0 {
+                    println!("Command previousTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                println!("MPRemoteCommand unknown");
+                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
             });
             let command_handler = command_handler.copy();
             
             println!("Debug");
             remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
 
             println!("Debug 1");
             info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
@@ -132,7 +151,9 @@ impl MediaService {
         return -1;
     }
 
-    pub fn set_playback_status(&self, _status: i32) {}
+    pub fn set_playback_status(&self, _status: i32) {
+
+    }
 
     pub fn get_artist(&self) -> String {
         println!("Get artist111");
