@@ -1,13 +1,8 @@
 mod bindings;
 
-use std::convert::TryInto;
-use std::ffi::CStr;
-use std::ops::Deref;
 use block::ConcreteBlock;
 
 // use std::any::type_name_of_val; //Debug
-
-use std::os::raw::c_char;
 
 use bindings::*;
 use neon::event::Channel;
@@ -15,19 +10,17 @@ use neon::prelude::*;
 
 use fruity::foundation::NSString;
 
-const UTF8_ENCODING: NSUInteger = 4;
-
 enum MPMediaItemProperty {
     Artist,
     Title,
     AlbumArtist,
-    AlbumTitle
+    AlbumTitle,
+    TrackID
 }
 
 pub struct MediaService {
-    nowPlayingInfoCenter: MPNowPlayingInfoCenter,
-    remoteCommandCenter: MPRemoteCommandCenter,
-    playingInfoDict: NSMutableDictionary
+    info_center: MPNowPlayingInfoCenter,
+    playing_info_dict: NSMutableDictionary
 }
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
@@ -35,57 +28,56 @@ impl Finalize for MediaService {}
 
 impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
-        let playingInfoDict: NSMutableDictionary;
-        let nowPlayingInfoCenter: MPNowPlayingInfoCenter;
-        let remoteCommandCenter: MPRemoteCommandCenter;
+        let playing_info_dict: NSMutableDictionary;
+        let info_center: MPNowPlayingInfoCenter;
+        let remote_command_center: MPRemoteCommandCenter;
 
         unsafe {
-            nowPlayingInfoCenter = MPNowPlayingInfoCenter::defaultCenter();
-            remoteCommandCenter = MPRemoteCommandCenter::sharedCommandCenter();
+            info_center = MPNowPlayingInfoCenter::defaultCenter();
+            remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
             println!("Fruity set author 1234!");
             
-            let commandHandler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
+            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
                 // println!("commandHelper: {}", type_name_of_val(&e));
                 println!("Callback handler executed");
                 return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
             });
-            let commandHandler = commandHandler.copy();
+            let command_handler = command_handler.copy();
             
             println!("Debug");
-            remoteCommandCenter.playCommand().addTargetWithHandler_(&*commandHandler);
-            remoteCommandCenter.pauseCommand().addTargetWithHandler_(&*commandHandler);
+            remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
 
             println!("Debug 1");
-            nowPlayingInfoCenter.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
+            info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
 
-            playingInfoDict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
+            playing_info_dict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
                 &NSMutableDictionary::alloc(),
             ));
 
-            nowPlayingInfoCenter
-                .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
-                nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(playingInfoDict.0));
+            info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
+            info_center.setNowPlayingInfo_(NSDictionary(playing_info_dict.0));
         }
         Self {
-            nowPlayingInfoCenter,
-            remoteCommandCenter,
-            playingInfoDict
+            info_center,
+            playing_info_dict
         }
     }
 
     unsafe fn set_metadata(&self, key: MPMediaItemProperty, value: NSString) //TODO: make it work with NSObject
     {
-        let keyO;
+        let key_o;
 
         match key {
-            MPMediaItemProperty::Artist => keyO = MPMediaItemPropertyArtist.0,
-            MPMediaItemProperty::Title => keyO = MPMediaItemPropertyTitle.0,
-            MPMediaItemProperty::AlbumArtist => keyO = MPMediaItemPropertyAlbumArtist.0,
-            MPMediaItemProperty::AlbumTitle => keyO = MPMediaItemPropertyAlbumTitle.0,
+            MPMediaItemProperty::Artist => key_o = MPMediaItemPropertyArtist.0,
+            MPMediaItemProperty::Title => key_o = MPMediaItemPropertyTitle.0,
+            MPMediaItemProperty::AlbumArtist => key_o = MPMediaItemPropertyAlbumArtist.0,
+            MPMediaItemProperty::AlbumTitle => key_o = MPMediaItemPropertyAlbumTitle.0,
+            MPMediaItemProperty::TrackID => key_o = MPMediaItemPropertyPersistentID.0,
         }
         
-        let _result: objc::runtime::Object = msg_send!(self.playingInfoDict, setObject : value forKey : keyO);
-        self.nowPlayingInfoCenter.setNowPlayingInfo_(NSDictionary(self.playingInfoDict.0));
+        let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : value forKey : key_o);
+        self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
     }
 
     fn set_metadata_str(&self, key: MPMediaItemProperty, value: String)
@@ -146,7 +138,7 @@ impl MediaService {
         println!("Get artist111");
         let artist: NSString;
         unsafe {
-            let info = self.nowPlayingInfoCenter.nowPlayingInfo().0;
+            let info = self.info_center.nowPlayingInfo().0;
             println!("NowPlaying info {:p}", info);
             artist = msg_send!(info, objectForKey: MPMediaItemPropertyArtist.0);
             println!("Artists {}", artist)
@@ -155,39 +147,41 @@ impl MediaService {
         return artist.to_string();
     }
 
-    pub fn set_artist(&self, _artist: String) {
-        self.set_metadata_str(MPMediaItemProperty::Artist, _artist)
+    pub fn set_artist(&self, artist: String) {
+        self.set_metadata_str(MPMediaItemProperty::Artist, artist)
     }
 
     pub fn get_album_artist(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_album_artist(&self, _album_artist: String) {
-        self.set_metadata_str(MPMediaItemProperty::AlbumArtist, _album_artist)
+    pub fn set_album_artist(&self, album_artist: String) {
+        self.set_metadata_str(MPMediaItemProperty::AlbumArtist, album_artist)
     }
 
     pub fn get_album_title(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_album_title(&self, _album_title: String) {
-        self.set_metadata_str(MPMediaItemProperty::AlbumTitle, _album_title)
+    pub fn set_album_title(&self, album_title: String) {
+        self.set_metadata_str(MPMediaItemProperty::AlbumTitle, album_title)
     }
 
     pub fn get_title(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_title(&self, _title: String) {
-        self.set_metadata_str(MPMediaItemProperty::Title, _title)
+    pub fn set_title(&self, title: String) {
+        self.set_metadata_str(MPMediaItemProperty::Title, title)
     }
 
     pub fn get_track_id(&self) -> String {
         return "".to_string();
     }
 
-    pub fn set_track_id(&self, _track_id: String) {}
+    pub fn set_track_id(&self, track_id: String) {
+        self.set_metadata_str(MPMediaItemProperty::TrackID, track_id)
+    }
 
     pub fn set_thumbnail(&self, _thumbnail_type: i32, _thumbnail: String) {}
     // endregion Media Information
