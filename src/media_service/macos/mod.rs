@@ -2,11 +2,12 @@ mod bindings;
 
 use block::ConcreteBlock;
 
-use std::any::type_name_of_val; //Debug
+// use std::any::type_name_of_val; //Debug
 
 use bindings::*;
 use neon::event::Channel;
 use neon::prelude::*;
+use std::sync::Arc;
 
 use fruity::foundation::NSString;
 
@@ -18,18 +19,68 @@ enum MPMediaItemProperty {
     TrackID
 }
 
-// pub struct MPRemoteEventCallback {
-//     callback: Root<JsFunction>,
-//     channel: Channel,
-// }
+pub struct MPRemoteEventCallback {
+    callback: Arc<Root<JsFunction>>,
+    channel: Channel,
+}
 
-// impl MPRemoteEventCallback {
+impl MPRemoteEventCallback {
+    pub fn new(callback: Arc<Root<JsFunction>>, channel: Channel) -> Self {
+        Self {
+            callback,
+            channel
+        } 
+    }
 
-// }
+    unsafe fn sendEventToJs(callback: Arc<Root<JsFunction>>, channel: Channel, s: &'static str) {
+        channel.send(move |mut cx| {
+            let callback = callback.to_inner(&mut cx);
+            let this = cx.undefined();
+            let js_button = cx.string(s);
+            callback.call(&mut cx, this, vec![js_button]);
+            Ok(())
+        });
+    }
+
+    unsafe fn handleEvent(callback: Arc<Root<JsFunction>>, channel: Channel, e: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        let command: MPRemoteCommand = msg_send!(e, command);
+        let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+
+        if command.0 == remote_command_center.playCommand().0 {
+            println!("Command123 playCommand");
+            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(), "play");
+            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+        }
+        if command.0 == remote_command_center.pauseCommand().0 {
+            println!("Command123 pauseCommand");
+            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"pause");
+            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+        }
+        if command.0 == remote_command_center.nextTrackCommand().0 {
+            println!("Command123 nextTrackCommand");
+            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"next");
+            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+        }
+        if command.0 == remote_command_center.previousTrackCommand().0 {
+            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"previous");
+            println!("Command123 previousTrackCommand");
+            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+        }
+        println!("MPRemoteCommand unknown");
+        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
+    }
+
+    pub fn getCommandHandler(&self) -> impl Fn(MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus + '_ {
+        unsafe {
+            return move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { MPRemoteEventCallback::handleEvent(self.callback.clone(), self.channel.clone(), e) };
+        }
+    }
+}
 
 pub struct MediaService {
     info_center: MPNowPlayingInfoCenter,
-    playing_info_dict: NSMutableDictionary
+    playing_info_dict: NSMutableDictionary,
+    event_callback: Option<Arc<MPRemoteEventCallback>>
 }
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
@@ -53,7 +104,8 @@ impl MediaService {
         }
         Self {
             info_center,
-            playing_info_dict
+            playing_info_dict,
+            event_callback: None
         }
     }
 
@@ -187,34 +239,19 @@ impl MediaService {
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> i64 {
+        // self.event_callback = Some(, channel)));
+        let event_callback = Arc::new(MPRemoteEventCallback::new(Arc::new(callback), channel));
         unsafe {
             let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            let command_handler = ConcreteBlock::new(|e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus {
-                let command: MPRemoteCommand = msg_send!(e, command);
-                let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-                if command.0 == remote_command_center.playCommand().0 {
-                    println!("Command123 playCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.pauseCommand().0 {
-                    println!("Command123 pauseCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.nextTrackCommand().0 {
-                    println!("Command123 nextTrackCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                if command.0 == remote_command_center.previousTrackCommand().0 {
-                    println!("Command123 previousTrackCommand");
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                }
-                println!("MPRemoteCommand unknown");
-                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
-            });
+            // let command_handler;
+            // if let Some(ref mut c) = self.event_callback {
+
+            //     command_handler = ConcreteBlock::new(c.getCommandHandler());
+            // }
+            let command_handler = ConcreteBlock::new(event_callback.getCommandHandler());
             let command_handler = command_handler.copy();
             remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
-            
             remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
         }
