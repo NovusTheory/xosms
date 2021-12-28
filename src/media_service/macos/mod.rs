@@ -39,8 +39,6 @@ impl MediaService {
             playing_info_dict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
                 &NSMutableDictionary::alloc(),
             ));
-
-            info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying);
             info_center.setNowPlayingInfo_(NSDictionary(playing_info_dict.0));
         }
         Self {
@@ -115,8 +113,18 @@ impl MediaService {
         return -1;
     }
 
-    pub fn set_playback_status(&self, _status: i32) {
-
+    pub fn set_playback_status(&self, status: i32) {
+        let state = match status{
+            1 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
+            2 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped,
+            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
+            4 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused,
+            _ => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown,
+        };
+        
+        unsafe {
+            self.info_center.setPlaybackState_(state);
+        }
     }
 
     pub fn get_artist(&self) -> String {
