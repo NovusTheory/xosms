@@ -172,8 +172,17 @@ impl MediaService {
     // endregion Media Information
 
     // region Events
+    fn send_button_pressed(callback: Arc<Root<JsFunction>>, channel: Channel, button: &'static str) {
+        let channel = channel.clone();
+        channel.send(move |mut cx| {
+            let callback = callback.to_inner(&mut cx);
+            let this = cx.undefined();
+            let js_button = cx.string(button);
+            let _ = callback.call(&mut cx, this, vec![js_button]);
+            Ok(())
+        });
+    }
 
-    // fn send_button_pressed(callback: Root<JsFunction>, channel: Channel, button: String)
     pub fn set_button_pressed_callback(
         &mut self,
         callback: Root<JsFunction>,
@@ -181,38 +190,36 @@ impl MediaService {
     ) -> i64 {
         unsafe {
             let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-
-            let callback_arc = std::sync::Arc::new(callback);
-            let callback_eh_clone = callback_arc.clone();
-            let channel_clone = channel.clone();
+            let callback = std::sync::Arc::new(callback);
 
             let command_handler = ConcreteBlock::new(move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
                 let command: MPRemoteCommand = msg_send!(e, command);
                 let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-                let callback_js_channel_clone = callback_eh_clone.clone();
-        
-                if command.0 == remote_command_center.playCommand().0 {
-                    println!("Command123 playCommand");
-                    channel_clone.send(move |mut cx| {
-                        let callback = callback_js_channel_clone.to_inner(&mut cx);
-                        let this = cx.undefined();
-                        let js_button = cx.string("play");
-                        callback.call(&mut cx, this, vec![js_button]);
+                let callback = callback.clone();
+                let channel = channel.clone();
 
-                        Ok(())
-                    });
+                if command.0 == remote_command_center.playCommand().0 {
+                    MediaService::send_button_pressed(callback, channel, "play");
                     return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
                 }
                 if command.0 == remote_command_center.pauseCommand().0 {
-                    println!("Command123 pauseCommand");
+                    MediaService::send_button_pressed(callback, channel, "pause");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.togglePlayPauseCommand().0 {
+                    MediaService::send_button_pressed(callback, channel, "playpause");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.stopCommand().0 {
+                    MediaService::send_button_pressed(callback, channel, "stop");
                     return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
                 }
                 if command.0 == remote_command_center.nextTrackCommand().0 {
-                    println!("Command123 nextTrackCommand");
+                    MediaService::send_button_pressed(callback, channel, "next");
                     return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
                 }
                 if command.0 == remote_command_center.previousTrackCommand().0 {
-                    println!("Command123 previousTrackCommand");
+                    MediaService::send_button_pressed(callback, channel, "previous");
                     return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
                 }
                 println!("MPRemoteCommand unknown");
@@ -221,6 +228,8 @@ impl MediaService {
             let command_handler = command_handler.copy();
             remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.togglePlayPauseCommand().addTargetWithHandler_(&*command_handler);
+            remote_command_center.stopCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
         }
