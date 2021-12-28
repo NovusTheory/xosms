@@ -19,68 +19,9 @@ enum MPMediaItemProperty {
     TrackID
 }
 
-pub struct MPRemoteEventCallback {
-    callback: Arc<Root<JsFunction>>,
-    channel: Channel,
-}
-
-impl MPRemoteEventCallback {
-    pub fn new(callback: Arc<Root<JsFunction>>, channel: Channel) -> Self {
-        Self {
-            callback,
-            channel
-        } 
-    }
-
-    unsafe fn sendEventToJs(callback: Arc<Root<JsFunction>>, channel: Channel, s: &'static str) {
-        channel.send(move |mut cx| {
-            let callback = callback.to_inner(&mut cx);
-            let this = cx.undefined();
-            let js_button = cx.string(s);
-            callback.call(&mut cx, this, vec![js_button]);
-            Ok(())
-        });
-    }
-
-    unsafe fn handleEvent(callback: Arc<Root<JsFunction>>, channel: Channel, e: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
-        let command: MPRemoteCommand = msg_send!(e, command);
-        let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-
-        if command.0 == remote_command_center.playCommand().0 {
-            println!("Command123 playCommand");
-            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(), "play");
-            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-        }
-        if command.0 == remote_command_center.pauseCommand().0 {
-            println!("Command123 pauseCommand");
-            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"pause");
-            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-        }
-        if command.0 == remote_command_center.nextTrackCommand().0 {
-            println!("Command123 nextTrackCommand");
-            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"next");
-            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-        }
-        if command.0 == remote_command_center.previousTrackCommand().0 {
-            MPRemoteEventCallback::sendEventToJs(callback.clone(), channel.clone(),"previous");
-            println!("Command123 previousTrackCommand");
-            return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-        }
-        println!("MPRemoteCommand unknown");
-        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
-    }
-
-    pub fn getCommandHandler(&self) -> impl Fn(MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus + '_ {
-        unsafe {
-            return move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { MPRemoteEventCallback::handleEvent(self.callback.clone(), self.channel.clone(), e) };
-        }
-    }
-}
-
 pub struct MediaService {
     info_center: MPNowPlayingInfoCenter,
     playing_info_dict: NSMutableDictionary,
-    event_callback: Option<Arc<MPRemoteEventCallback>>
 }
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
@@ -104,24 +45,21 @@ impl MediaService {
         }
         Self {
             info_center,
-            playing_info_dict,
-            event_callback: None
+            playing_info_dict
         }
     }
 
     unsafe fn set_metadata(&self, key: MPMediaItemProperty, value: NSString) //TODO: make it work with NSObject
     {
-        let key_o;
-
-        match key {
-            MPMediaItemProperty::Artist => key_o = MPMediaItemPropertyArtist.0,
-            MPMediaItemProperty::Title => key_o = MPMediaItemPropertyTitle.0,
-            MPMediaItemProperty::AlbumArtist => key_o = MPMediaItemPropertyAlbumArtist.0,
-            MPMediaItemProperty::AlbumTitle => key_o = MPMediaItemPropertyAlbumTitle.0,
-            MPMediaItemProperty::TrackID => key_o = MPMediaItemPropertyPersistentID.0,
-        }
+        let key = match key {
+            MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
+            MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
+            MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
+            MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
+            MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
+        };
         
-        let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : value forKey : key_o);
+        let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : value forKey : key);
         self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
     }
 
@@ -234,21 +172,52 @@ impl MediaService {
     // endregion Media Information
 
     // region Events
+
+    // fn send_button_pressed(callback: Root<JsFunction>, channel: Channel, button: String)
     pub fn set_button_pressed_callback(
         &mut self,
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> i64 {
-        // self.event_callback = Some(, channel)));
-        let event_callback = Arc::new(MPRemoteEventCallback::new(Arc::new(callback), channel));
         unsafe {
             let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            // let command_handler;
-            // if let Some(ref mut c) = self.event_callback {
 
-            //     command_handler = ConcreteBlock::new(c.getCommandHandler());
-            // }
-            let command_handler = ConcreteBlock::new(event_callback.getCommandHandler());
+            let callback_arc = std::sync::Arc::new(callback);
+            let callback_eh_clone = callback_arc.clone();
+            let channel_clone = channel.clone();
+
+            let command_handler = ConcreteBlock::new(move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
+                let command: MPRemoteCommand = msg_send!(e, command);
+                let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+                let callback_js_channel_clone = callback_eh_clone.clone();
+        
+                if command.0 == remote_command_center.playCommand().0 {
+                    println!("Command123 playCommand");
+                    channel_clone.send(move |mut cx| {
+                        let callback = callback_js_channel_clone.to_inner(&mut cx);
+                        let this = cx.undefined();
+                        let js_button = cx.string("play");
+                        callback.call(&mut cx, this, vec![js_button]);
+
+                        Ok(())
+                    });
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.pauseCommand().0 {
+                    println!("Command123 pauseCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.nextTrackCommand().0 {
+                    println!("Command123 nextTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                if command.0 == remote_command_center.previousTrackCommand().0 {
+                    println!("Command123 previousTrackCommand");
+                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
+                }
+                println!("MPRemoteCommand unknown");
+                return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
+            });
             let command_handler = command_handler.copy();
             remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
             remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
