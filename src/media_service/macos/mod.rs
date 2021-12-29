@@ -25,6 +25,7 @@ pub struct MediaService {
 }
 
 const UTF8_ENCODING: NSUInteger = 4;
+const ASCII_ENCODING: NSUInteger = 1;
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
 impl Finalize for MediaService {}
@@ -187,7 +188,8 @@ impl MediaService {
             let str = "https://i.ytimg.com/vi/7zjPXE-clcU/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mFsc3BpLft72R0kb8OIkalJddfQA";
 
             println!("STR");
-            let url_str = bindings::NSString::alloc().initWithBytes_length_encoding_(
+            let url_str = bindings::NSString::alloc();
+            let url_str1 = url_str.initWithBytes_length_encoding_(
                 str.as_ptr() as *mut std::ffi::c_void,
                 str.len().try_into().unwrap(),
                 UTF8_ENCODING,
@@ -205,7 +207,7 @@ impl MediaService {
             // let url = ;
             println!("URL322");
             // let url = NSURL::URLWithString_(url_str.0);
-            let url1: objc::runtime::Object = msg_send!(url, initWithUTF8String: url_str);
+            let url1: objc::runtime::Object = msg_send!(url, initWithString : url_str1);
             println!("URL333");
             let debug = url.absoluteString();
             println!("URL344");
