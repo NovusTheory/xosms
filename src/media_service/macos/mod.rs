@@ -1,8 +1,8 @@
 mod bindings;
 
 use block::ConcreteBlock;
-
-// use std::any::type_name_of_val; //Debug
+use std::ffi::CStr;
+use std::convert::TryInto;
 
 use bindings::*;
 use neon::event::Channel;
@@ -16,13 +16,15 @@ enum MPMediaItemProperty {
     Title,
     AlbumArtist,
     AlbumTitle,
-    TrackID
+    TrackID,
 }
 
 pub struct MediaService {
     info_center: MPNowPlayingInfoCenter,
     playing_info_dict: NSMutableDictionary,
 }
+
+const UTF8_ENCODING: NSUInteger = 4;
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
 impl Finalize for MediaService {}
@@ -47,24 +49,19 @@ impl MediaService {
         }
     }
 
-    unsafe fn set_metadata(&self, key: MPMediaItemProperty, value: NSString) //TODO: make it work with NSObject
+    fn set_metadata(&self, key: MPMediaItemProperty, value: String)
     {
-        let key = match key {
-            MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
-            MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
-            MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
-            MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
-            MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
-        };
-        
-        let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : value forKey : key);
-        self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-    }
-
-    fn set_metadata_str(&self, key: MPMediaItemProperty, value: String)
-    {
-        unsafe {
-            self.set_metadata(key, NSString::from(value.as_str()))
+        unsafe{
+            let key = match key {
+                MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
+                MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
+                MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
+                MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
+                MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
+            };
+            let str = NSString::from(value.as_str());
+            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
+            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
     }
 
@@ -141,7 +138,7 @@ impl MediaService {
     }
 
     pub fn set_artist(&self, artist: String) {
-        self.set_metadata_str(MPMediaItemProperty::Artist, artist)
+        self.set_metadata(MPMediaItemProperty::Artist, artist);
     }
 
     pub fn get_album_artist(&self) -> String {
@@ -149,7 +146,7 @@ impl MediaService {
     }
 
     pub fn set_album_artist(&self, album_artist: String) {
-        self.set_metadata_str(MPMediaItemProperty::AlbumArtist, album_artist)
+        self.set_metadata(MPMediaItemProperty::AlbumArtist, album_artist);
     }
 
     pub fn get_album_title(&self) -> String {
@@ -157,7 +154,7 @@ impl MediaService {
     }
 
     pub fn set_album_title(&self, album_title: String) {
-        self.set_metadata_str(MPMediaItemProperty::AlbumTitle, album_title)
+        self.set_metadata(MPMediaItemProperty::AlbumTitle, album_title);
     }
 
     pub fn get_title(&self) -> String {
@@ -165,7 +162,7 @@ impl MediaService {
     }
 
     pub fn set_title(&self, title: String) {
-        self.set_metadata_str(MPMediaItemProperty::Title, title)
+        self.set_metadata(MPMediaItemProperty::Title, title);
     }
 
     pub fn get_track_id(&self) -> String {
@@ -173,10 +170,66 @@ impl MediaService {
     }
 
     pub fn set_track_id(&self, track_id: String) {
-        self.set_metadata_str(MPMediaItemProperty::TrackID, track_id)
+        self.set_metadata(MPMediaItemProperty::TrackID, track_id);
     }
 
-    pub fn set_thumbnail(&self, _thumbnail_type: i32, _thumbnail: String) {}
+    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
+        // match thumbnail_type {
+        //     2 => {
+        //         let str = NSString::from(value.as_str());
+        //         let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
+        //         self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+        //     },
+        //     _ => println!("Unsupported thumbnail type: {}", thumbnail_type),
+        // }
+        unsafe {
+            // let img: objc::runtime::Object = msg_send![NSImage, new];
+            let str = "https://i.ytimg.com/vi/7zjPXE-clcU/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mFsc3BpLft72R0kb8OIkalJddfQA";
+
+            println!("STR");
+            let url_str: bindings::NSString = bindings::NSString::alloc();
+            let url_str1 = url_str.initWithBytes_length_encoding_(
+                str.as_ptr() as *mut std::ffi::c_void,
+                str.len().try_into().unwrap(),
+                UTF8_ENCODING,
+            );
+
+            
+            // let url_str: = bindings::NSString::alloc().initWithBytes_length_encoding_(
+            //     str.as_ptr() as *mut std::ffi::c_void,
+            //     str.len().try_into().unwrap(),
+            //     UTF8_ENCODING,
+            // ).unwrap();
+            // let url_str_object: bindings::NSObject = *url_str.try_into().unwrap();
+            println!("URL321");
+            let url = bindings::NSURL::alloc();
+            // let url = ;
+            println!("URL322");
+            // let url = NSURL::URLWithString_(url_str.0);
+            let url1: objc::runtime::Object = msg_send!(url, initWithString: url_str);
+            println!("URL333");
+            let debug = url.absoluteString();
+            println!("URL344");
+            println!("URL :{:?}", CStr::from_ptr(debug.cString()));
+
+            println!("IMG1");
+            let img = bindings::NSImage::alloc();
+            println!("IMG2");
+            let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: url1);
+            
+            println!("ARTWORK");
+            let artwork = MPMediaItemArtwork::alloc();
+            let _result: objc::runtime::Object = msg_send!(artwork, initWithImage: img);
+            
+            println!("DICT");
+            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+            // let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: );
+            // let str = ;
+            // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
+            // self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+        }
+    }
     // endregion Media Information
 
     // region Events
@@ -186,7 +239,7 @@ impl MediaService {
             let callback = callback.to_inner(&mut cx);
             let this = cx.undefined();
             let js_button = cx.string(button);
-            let _ = callback.call(&mut cx, this, vec![js_button]);
+            let _result = callback.call(&mut cx, this, vec![js_button]);
             Ok(())
         });
     }

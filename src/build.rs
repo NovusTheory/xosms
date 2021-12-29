@@ -37,6 +37,7 @@ fn main() {
             .allowlist_type(".*NSProxy.*")
             .allowlist_type(".*NSValue.*")
             .allowlist_type(".*NSOrderedSet.*")
+            .allowlist_type(".*NSString.*")
             .allowlist_type(".*AV.*");
         /*.blocklist_item("timezone")
         .blocklist_item("objc_object")
