@@ -24,9 +24,6 @@ pub struct MediaService {
     playing_info_dict: NSMutableDictionary,
 }
 
-const UTF8_ENCODING: NSUInteger = 4;
-const ASCII_ENCODING: NSUInteger = 1;
-
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
 impl Finalize for MediaService {}
 
@@ -184,47 +181,36 @@ impl MediaService {
         //     _ => println!("Unsupported thumbnail type: {}", thumbnail_type),
         // }
         unsafe {
+            //TODO: Try 
+            //https://github.com/tauri-apps/wry/blob/8f72c85d7c1135c38c18ac65870aba7e77f4f1ae/src/webview/wkwebview/mod.rs#L437
+            //https://omz-software.com/pythonista/docs/ios/objc_util.html
+
             // let img: objc::runtime::Object = msg_send![NSImage, new];
             let str = "https://i.ytimg.com/vi/7zjPXE-clcU/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mFsc3BpLft72R0kb8OIkalJddfQA";
+            // let url: id = msg_send![class!(NSURL), URLWithString: NSString::new(str)];
 
             println!("STR");
-            let url_str = bindings::NSString::alloc();
-            let url_str1 = url_str.initWithBytes_length_encoding_(
-                str.as_ptr() as *mut std::ffi::c_void,
-                str.len().try_into().unwrap(),
-                UTF8_ENCODING,
-            );
-
-            
-            // let url_str: = bindings::NSString::alloc().initWithBytes_length_encoding_(
-            //     str.as_ptr() as *mut std::ffi::c_void,
-            //     str.len().try_into().unwrap(),
-            //     UTF8_ENCODING,
-            // ).unwrap();
-            // let url_str_object: bindings::NSObject = *url_str.try_into().unwrap();
-            println!("URL321");
-            let url = bindings::NSURL::alloc();
-            // let url = ;
-            println!("URL322");
-            // let url = NSURL::URLWithString_(url_str.0);
-            let url1: objc::runtime::Object = msg_send!(url, initWithString : url_str1);
-            println!("URL333");
-            let debug = url.absoluteString();
-            println!("URL344");
+            let url: id = msg_send![class!(NSURL), URLWithString: NSString::from(str)];
+            println!("DEBUG URL");
+            let debug: bindings::NSString = msg_send!(url, absoluteString);
             println!("URL :{:?}", CStr::from_ptr(debug.cString()));
 
             println!("IMG1");
-            let img = bindings::NSImage::alloc();
-            println!("IMG2");
-            let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: url1);
+            // let img = bindings::NSImage::alloc();
+            // println!("IMG2");
+            // let _result: id = msg_send!(img, initWithContentsOfURL: url);
+            let img: id = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
+
+            println!("DEBUG IMAGE");
+            let size: bindings::NSSize = msg_send!(img, size);
+            println!("Image size: :{:?}", size);
             
             println!("ARTWORK");
-            let artwork = MPMediaItemArtwork::alloc();
-            let _result: objc::runtime::Object = msg_send!(artwork, initWithImage: img);
+            // let artwork: id = msg_send!(MPMediaItemArtwork::alloc(), initWithImage: img);
             
-            println!("DICT");
-            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+            // println!("DICT");
+            // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+            // self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
             // let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: );
             // let str = ;
             // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
@@ -301,3 +287,30 @@ impl MediaService {
     pub fn remove_button_presed_callback(&mut self) {}
     // endregion Events
 }
+
+
+// NSString helpers
+const UTF8_ENCODING: usize = 4;
+
+// struct NSString(Id<Object>);
+
+// impl bindings::NSString {
+//   fn new(s: &str) -> Self {
+//     // Safety: objc runtime calls are unsafe
+//     NSString(unsafe {
+//       let nsstring: id = msg_send![class!(NSString), alloc];
+//       bindings::id::from_ptr(
+//         msg_send![nsstring, initWithBytes:s.as_ptr() length:s.len() encoding:UTF8_ENCODING],
+//       )
+//     })
+//   }
+
+//   fn to_str(&self) -> &str {
+//     unsafe {
+//       let bytes: *const c_char = msg_send![self.0, UTF8String];
+//       let len = msg_send![self.0, lengthOfBytesUsingEncoding: UTF8_ENCODING];
+//       let bytes = slice::from_raw_parts(bytes as *const u8, len);
+//       str::from_utf8_unchecked(bytes)
+//     }
+//   }
+// }
