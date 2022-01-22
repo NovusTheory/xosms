@@ -172,20 +172,27 @@ impl MediaService {
 
     pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
         unsafe {
+            let path: id = msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
+            let img: NSImage;
             match thumbnail_type {
-                2 => {
-                    let url: id = msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
-                    let img: NSImage = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
-                    let size: bindings::NSSize = msg_send!(img, size);
-                    let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
-                        return img.clone();
-                    });
-                    let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
-                    let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-                    self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+                1 => {
+                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfFile: path);
                 },
-                _ => println!("Unsupported thumbnail type: {}", thumbnail_type),
+                2 => {
+                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: path);
+                },
+                _ => {
+                    println!("Unsupported thumbnail type: {}", thumbnail_type);
+                    return
+                }
             }
+            let size: bindings::NSSize = msg_send!(img, size);
+            let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
+                return img.clone();
+            });
+            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
+            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
     }
     // endregion Media Information
