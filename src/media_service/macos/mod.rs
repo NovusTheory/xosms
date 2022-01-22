@@ -2,7 +2,7 @@ mod bindings;
 
 use block::ConcreteBlock;
 use std::ffi::CStr;
-use std::convert::TryInto;
+// use std::convert::TryInto;
 
 use bindings::*;
 use neon::event::Channel;
@@ -171,7 +171,7 @@ impl MediaService {
         self.set_metadata(MPMediaItemProperty::TrackID, track_id);
     }
 
-    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
+    pub fn set_thumbnail(&self, _thumbnail_type: i32, _thumbnail: String) {
         // match thumbnail_type {
         //     2 => {
         //         let str = NSString::from(value.as_str());
@@ -185,32 +185,46 @@ impl MediaService {
             //https://github.com/tauri-apps/wry/blob/8f72c85d7c1135c38c18ac65870aba7e77f4f1ae/src/webview/wkwebview/mod.rs#L437
             //https://omz-software.com/pythonista/docs/ios/objc_util.html
 
-            // let img: objc::runtime::Object = msg_send![NSImage, new];
             let str = "https://i.ytimg.com/vi/7zjPXE-clcU/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mFsc3BpLft72R0kb8OIkalJddfQA";
-            // let url: id = msg_send![class!(NSURL), URLWithString: NSString::new(str)];
 
             println!("STR");
             let url: id = msg_send![class!(NSURL), URLWithString: NSString::from(str)];
             println!("DEBUG URL");
             let debug: bindings::NSString = msg_send!(url, absoluteString);
-            println!("URL :{:?}", CStr::from_ptr(debug.cString()));
+            println!("URL: {:?}", CStr::from_ptr(debug.cString()));
 
             println!("IMG1");
-            // let img = bindings::NSImage::alloc();
-            // println!("IMG2");
-            // let _result: id = msg_send!(img, initWithContentsOfURL: url);
-            let img: id = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
+            // let img: id = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
+            let img: NSImage = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
 
             println!("DEBUG IMAGE");
             let size: bindings::NSSize = msg_send!(img, size);
-            println!("Image size: :{:?}", size);
+            println!("Image size: {:?}", size);
             
-            println!("ARTWORK");
-            // let artwork: id = msg_send!(MPMediaItemArtwork::alloc(), initWithImage: img);
+            println!("ARTWORK ConcreteBlock");
+            let x = ConcreteBlock::new(move |_: CGSize| -> NSImage {
+                println!("X executed");
+                return img.clone();
+            });
+            println!("ARTWORK NEW");
+            // let id: id = msg_send!(class!(MPMediaItemArtwork), new);
+            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*x);
+            println!("SETTING PLAYBACK INFO");
+            // let artwork: MPMediaItemArtwork = msg_send!(class!(MPMediaItemArtwork), new);
+            // artwork.initWithBoundsSize_requestHandler_(size, &*x);
+    //         pub type _bindgen_ty_id_231239 =
+    // *const ::block::Block<(MPRemoteCommandEvent,), MPRemoteCommandHandlerStatus>;
+
+    // pub type _bindgen_ty_id_231220 = *const ::block::Block<(CGSize,), NSImage>;
+            // let command_handler = command_handler.copy();
+            // remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
+
+            // let artwork: MPMediaItemArtwork = <MPMediaItemArtwork as bindings::IMPMediaItemArtwork>::new();
+            // artwork.0.
             
-            // println!("DICT");
-            // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-            // self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+            println!("DICT");
+            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
             // let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: );
             // let str = ;
             // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
@@ -290,7 +304,7 @@ impl MediaService {
 
 
 // NSString helpers
-const UTF8_ENCODING: usize = 4;
+// const UTF8_ENCODING: usize = 4;
 
 // struct NSString(Id<Object>);
 
