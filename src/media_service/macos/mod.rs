@@ -1,7 +1,7 @@
 mod bindings;
 
 use block::ConcreteBlock;
-// use std::ffi::CStr;
+use std::ffi::CStr;
 
 use bindings::*;
 use neon::event::Channel;
@@ -122,16 +122,22 @@ impl MediaService {
     }
 
     pub fn get_artist(&self) -> String {
-        println!("Get artist111");
-        let artist: NSString;
+        let value: String;
         unsafe {
+            println!("Debug 0");
             let info = self.info_center.nowPlayingInfo().0;
-            println!("NowPlaying info {:p}", info);
-            artist = msg_send!(info, objectForKey: MPMediaItemPropertyArtist.0);
+            println!("Debug 1");
+            let artist: NSString = msg_send!(info, objectForKey: MPMediaItemPropertyArtist.0);
+            println!("Debug 2");
+            // println!("Artist :{:?}", CStr::from_ptr(artist.cString()));
+            value = artist.to_string();
+            println!("Debug 3");
+
+            
             println!("Artists {}", artist)
         }
 
-        return artist.to_string();
+        return value;
     }
 
     pub fn set_artist(&self, artist: String) {
@@ -194,6 +200,10 @@ impl MediaService {
             let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
             self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
+
+        
+        //TODO: Remove debug func:
+        println!("In function artist: {:?}", self.get_artist());
     }
     // endregion Media Information
 
