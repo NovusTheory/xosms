@@ -1,8 +1,7 @@
 mod bindings;
 
 use block::ConcreteBlock;
-use std::ffi::CStr;
-// use std::convert::TryInto;
+// use std::ffi::CStr;
 
 use bindings::*;
 use neon::event::Channel;
@@ -171,64 +170,22 @@ impl MediaService {
         self.set_metadata(MPMediaItemProperty::TrackID, track_id);
     }
 
-    pub fn set_thumbnail(&self, _thumbnail_type: i32, _thumbnail: String) {
-        // match thumbnail_type {
-        //     2 => {
-        //         let str = NSString::from(value.as_str());
-        //         let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
-        //         self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-        //     },
-        //     _ => println!("Unsupported thumbnail type: {}", thumbnail_type),
-        // }
+    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
         unsafe {
-            //TODO: Try 
-            //https://github.com/tauri-apps/wry/blob/8f72c85d7c1135c38c18ac65870aba7e77f4f1ae/src/webview/wkwebview/mod.rs#L437
-            //https://omz-software.com/pythonista/docs/ios/objc_util.html
-
-            let str = "https://i.ytimg.com/vi/7zjPXE-clcU/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mFsc3BpLft72R0kb8OIkalJddfQA";
-
-            println!("STR");
-            let url: id = msg_send![class!(NSURL), URLWithString: NSString::from(str)];
-            println!("DEBUG URL");
-            let debug: bindings::NSString = msg_send!(url, absoluteString);
-            println!("URL: {:?}", CStr::from_ptr(debug.cString()));
-
-            println!("IMG1");
-            // let img: id = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
-            let img: NSImage = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
-
-            println!("DEBUG IMAGE");
-            let size: bindings::NSSize = msg_send!(img, size);
-            println!("Image size: {:?}", size);
-            
-            println!("ARTWORK ConcreteBlock");
-            let x = ConcreteBlock::new(move |_: CGSize| -> NSImage {
-                println!("X executed");
-                return img.clone();
-            });
-            println!("ARTWORK NEW");
-            // let id: id = msg_send!(class!(MPMediaItemArtwork), new);
-            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*x);
-            println!("SETTING PLAYBACK INFO");
-            // let artwork: MPMediaItemArtwork = msg_send!(class!(MPMediaItemArtwork), new);
-            // artwork.initWithBoundsSize_requestHandler_(size, &*x);
-    //         pub type _bindgen_ty_id_231239 =
-    // *const ::block::Block<(MPRemoteCommandEvent,), MPRemoteCommandHandlerStatus>;
-
-    // pub type _bindgen_ty_id_231220 = *const ::block::Block<(CGSize,), NSImage>;
-            // let command_handler = command_handler.copy();
-            // remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
-
-            // let artwork: MPMediaItemArtwork = <MPMediaItemArtwork as bindings::IMPMediaItemArtwork>::new();
-            // artwork.0.
-            
-            println!("DICT");
-            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-            self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-            // let _result: objc::runtime::Object = msg_send!(img, initWithContentsOfURL: );
-            // let str = ;
-            // let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
-            // self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+            match thumbnail_type {
+                2 => {
+                    let url: id = msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
+                    let img: NSImage = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: url);
+                    let size: bindings::NSSize = msg_send!(img, size);
+                    let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
+                        return img.clone();
+                    });
+                    let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
+                    let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+                    self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+                },
+                _ => println!("Unsupported thumbnail type: {}", thumbnail_type),
+            }
         }
     }
     // endregion Media Information
@@ -301,30 +258,3 @@ impl MediaService {
     pub fn remove_button_presed_callback(&mut self) {}
     // endregion Events
 }
-
-
-// NSString helpers
-// const UTF8_ENCODING: usize = 4;
-
-// struct NSString(Id<Object>);
-
-// impl bindings::NSString {
-//   fn new(s: &str) -> Self {
-//     // Safety: objc runtime calls are unsafe
-//     NSString(unsafe {
-//       let nsstring: id = msg_send![class!(NSString), alloc];
-//       bindings::id::from_ptr(
-//         msg_send![nsstring, initWithBytes:s.as_ptr() length:s.len() encoding:UTF8_ENCODING],
-//       )
-//     })
-//   }
-
-//   fn to_str(&self) -> &str {
-//     unsafe {
-//       let bytes: *const c_char = msg_send![self.0, UTF8String];
-//       let len = msg_send![self.0, lengthOfBytesUsingEncoding: UTF8_ENCODING];
-//       let bytes = slice::from_raw_parts(bytes as *const u8, len);
-//       str::from_utf8_unchecked(bytes)
-//     }
-//   }
-// }
