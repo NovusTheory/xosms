@@ -1,7 +1,6 @@
 mod bindings;
 
 use block::ConcreteBlock;
-use std::ffi::CStr;
 
 use bindings::*;
 use neon::event::Channel;
@@ -16,6 +15,16 @@ enum MPMediaItemProperty {
     AlbumArtist,
     AlbumTitle,
     TrackID,
+}
+
+unsafe fn mpmedia_item_property_to_key(key: MPMediaItemProperty) -> id {
+    return match key {
+        MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
+        MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
+        MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
+        MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
+        MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
+    };
 }
 
 pub struct MediaService {
@@ -49,17 +58,21 @@ impl MediaService {
     fn set_metadata(&self, key: MPMediaItemProperty, value: String)
     {
         unsafe{
-            let key = match key {
-                MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
-                MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
-                MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
-                MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
-                MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
-            };
+            let key = mpmedia_item_property_to_key(key);
             let str = NSString::from(value.as_str());
             let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : str forKey : key);
             self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
+    }
+
+    fn get_metadata(&self, key: MPMediaItemProperty) -> String
+    {
+        let value: NSString;
+        unsafe{
+            let key = mpmedia_item_property_to_key(key);
+            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: key);
+        }
+        return value.to_string();
     }
 
     // region Control
@@ -122,22 +135,7 @@ impl MediaService {
     }
 
     pub fn get_artist(&self) -> String {
-        let value: String;
-        unsafe {
-            println!("Debug 0");
-            let info = self.info_center.nowPlayingInfo().0;
-            println!("Debug 1");
-            let artist: NSString = msg_send!(info, objectForKey: MPMediaItemPropertyArtist.0);
-            println!("Debug 2");
-            // println!("Artist :{:?}", CStr::from_ptr(artist.cString()));
-            value = artist.to_string();
-            println!("Debug 3");
-
-            
-            println!("Artists {}", artist)
-        }
-
-        return value;
+        return self.get_metadata(MPMediaItemProperty::Artist);
     }
 
     pub fn set_artist(&self, artist: String) {
@@ -145,7 +143,7 @@ impl MediaService {
     }
 
     pub fn get_album_artist(&self) -> String {
-        return "".to_string();
+        return self.get_metadata(MPMediaItemProperty::AlbumArtist);
     }
 
     pub fn set_album_artist(&self, album_artist: String) {
@@ -153,7 +151,7 @@ impl MediaService {
     }
 
     pub fn get_album_title(&self) -> String {
-        return "".to_string();
+        return self.get_metadata(MPMediaItemProperty::AlbumTitle);
     }
 
     pub fn set_album_title(&self, album_title: String) {
@@ -161,7 +159,7 @@ impl MediaService {
     }
 
     pub fn get_title(&self) -> String {
-        return "".to_string();
+        return self.get_metadata(MPMediaItemProperty::Title);
     }
 
     pub fn set_title(&self, title: String) {
@@ -169,7 +167,7 @@ impl MediaService {
     }
 
     pub fn get_track_id(&self) -> String {
-        return "".to_string();
+        return self.get_metadata(MPMediaItemProperty::TrackID);
     }
 
     pub fn set_track_id(&self, track_id: String) {
@@ -200,10 +198,6 @@ impl MediaService {
             let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
             self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
-
-        
-        //TODO: Remove debug func:
-        println!("In function artist: {:?}", self.get_artist());
     }
     // endregion Media Information
 
