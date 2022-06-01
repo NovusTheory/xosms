@@ -79,49 +79,23 @@ impl MediaService {
         }
     }
 
-    // region Control
-    pub fn is_enabled(&self) -> bool {
-        return false;
-    }
-
-    pub fn set_is_enabled(&self, _enabled: bool) {}
-    // endregion Control
-
-    // region Buttons
-    pub fn is_play_enabled(&self) -> bool {
-        return false;
-    }
-
-    pub fn set_is_play_enabled(&self, _enabled: bool) {}
-
-    pub fn is_pause_enabled(&self) -> bool {
-        return false;
-    }
-
-    pub fn set_is_pause_enabled(&self, _enabled: bool) {}
-
-    pub fn is_previous_enabled(&self) -> bool {
-        return false;
-    }
-
-    pub fn set_is_previous_enabled(&self, _enabled: bool) {}
-
-    pub fn is_next_enabled(&self) -> bool {
-        return false;
-    }
-
-    pub fn set_is_next_enabled(&self, _enabled: bool) {}
-    // endregion Buttons
-
-    // region Media Information
-    pub fn get_media_type(&self) -> i32 {
-        return -1;
-    }
-
-    pub fn set_media_type(&self, _media_type: i32) {}
-
     pub fn get_playback_status(&self) -> i32 {
-        return -1;
+        let value: Option<MPNowPlayingPlaybackState>;
+        unsafe{
+            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
+        }
+
+        match value {
+            None => return -1,
+            Some(n) => {
+                return match n {
+                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying => 1,
+                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped => 2,
+                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused  => 4,
+                    _ => -1,
+                }
+            }
+        }
     }
 
     pub fn set_playback_status(&self, status: i32) {
@@ -203,9 +177,7 @@ impl MediaService {
             self.info_center.setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
         }
     }
-    // endregion Media Information
 
-    // region Events
     fn send_button_pressed(callback: Arc<Root<JsFunction>>, channel: Channel, button: &'static str) {
         let channel = channel.clone();
         channel.send(move |mut cx| {
@@ -271,5 +243,40 @@ impl MediaService {
     }
 
     pub fn remove_button_presed_callback(&mut self) {}
-    // endregion Events
+
+    pub fn is_enabled(&self) -> bool {
+        return true;
+    }
+
+    pub fn set_is_enabled(&self, _enabled: bool) {}
+
+    pub fn is_play_enabled(&self) -> bool {
+        return true;
+    }
+
+    pub fn set_is_play_enabled(&self, _enabled: bool) {}
+
+    pub fn is_pause_enabled(&self) -> bool {
+        return true;
+    }
+
+    pub fn set_is_pause_enabled(&self, _enabled: bool) {}
+
+    pub fn is_previous_enabled(&self) -> bool {
+        return true;
+    }
+
+    pub fn set_is_previous_enabled(&self, _enabled: bool) {}
+
+    pub fn is_next_enabled(&self) -> bool {
+        return true;
+    }
+
+    pub fn set_is_next_enabled(&self, _enabled: bool) {}
+
+    pub fn get_media_type(&self) -> i32 {
+        return -1;
+    }
+
+    pub fn set_media_type(&self, _media_type: i32) {}
 }
