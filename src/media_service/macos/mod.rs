@@ -282,10 +282,18 @@ impl MediaService {
     pub fn set_is_enabled(&self, _enabled: bool) {}
 
     pub fn is_play_enabled(&self) -> bool {
-        return true;
+        unsafe {
+            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+            return remote_command_center.playCommand().isEnabled();
+        }
     }
 
-    pub fn set_is_play_enabled(&self, _enabled: bool) {}
+    pub fn set_is_play_enabled(&self, enabled: bool) {
+        unsafe {
+            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
+            remote_command_center.playCommand().setEnabled_(enabled);
+        }
+    }
 
     pub fn is_pause_enabled(&self) -> bool {
         return true;
