@@ -30,6 +30,7 @@ unsafe fn mpmedia_item_property_to_key(key: MPMediaItemProperty) -> id {
 pub struct MediaService {
     info_center: MPNowPlayingInfoCenter,
     playing_info_dict: NSMutableDictionary,
+    remote_command_center: MPRemoteCommandCenter,
 }
 
 unsafe impl Send for MediaService {} //TODO: Research deletion of that
@@ -39,9 +40,11 @@ impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
         let playing_info_dict: NSMutableDictionary;
         let info_center: MPNowPlayingInfoCenter;
+        let remote_command_center: MPRemoteCommandCenter;
 
         unsafe {
             info_center = MPNowPlayingInfoCenter::defaultCenter();
+            remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
             info_center.setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
 
             playing_info_dict = NSMutableDictionary(bindings::INSMutableDictionary::<id, id>::init(
@@ -51,7 +54,8 @@ impl MediaService {
         }
         Self {
             info_center,
-            playing_info_dict
+            playing_info_dict,
+            remote_command_center
         }
     }
 
@@ -226,7 +230,6 @@ impl MediaService {
         channel: Channel,
     ) -> i64 {
         unsafe {
-            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
             let callback = std::sync::Arc::new(callback);
 
             let command_handler = ConcreteBlock::new(move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus { 
@@ -263,53 +266,69 @@ impl MediaService {
                 return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
             });
             let command_handler = command_handler.copy();
-            remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.togglePlayPauseCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.stopCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
-            remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.playCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.pauseCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.togglePlayPauseCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.stopCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.nextTrackCommand().addTargetWithHandler_(&*command_handler);
+            self.remote_command_center.previousTrackCommand().addTargetWithHandler_(&*command_handler);
         }
         return -1;
     }
 
     pub fn remove_button_presed_callback(&mut self) {}
 
-    pub fn is_enabled(&self) -> bool {
-        return true;
-    }
-
-    pub fn set_is_enabled(&self, _enabled: bool) {}
-
     pub fn is_play_enabled(&self) -> bool {
         unsafe {
-            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            return remote_command_center.playCommand().isEnabled();
+            return self.remote_command_center.playCommand().isEnabled() != 0;
         }
     }
 
     pub fn set_is_play_enabled(&self, enabled: bool) {
         unsafe {
-            let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            remote_command_center.playCommand().setEnabled_(enabled);
+            self.remote_command_center.playCommand().setEnabled_(enabled as i8);
         }
     }
 
     pub fn is_pause_enabled(&self) -> bool {
-        return true;
+        unsafe {
+            return self.remote_command_center.pauseCommand().isEnabled() != 0;
+        }
     }
 
-    pub fn set_is_pause_enabled(&self, _enabled: bool) {}
+    pub fn set_is_pause_enabled(&self, enabled: bool) {
+        unsafe {
+            self.remote_command_center.pauseCommand().setEnabled_(enabled as i8);
+        }
+    }
 
     pub fn is_previous_enabled(&self) -> bool {
-        return true;
+        unsafe {
+            return self.remote_command_center.previousTrackCommand().isEnabled() != 0;
+        }
     }
 
-    pub fn set_is_previous_enabled(&self, _enabled: bool) {}
+    pub fn set_is_previous_enabled(&self, enabled: bool) {
+        unsafe {
+            self.remote_command_center.previousTrackCommand().setEnabled_(enabled as i8);
+        }
+    }
 
     pub fn is_next_enabled(&self) -> bool {
+        unsafe {
+            return self.remote_command_center.nextTrackCommand().isEnabled() != 0;
+        }
+    }
+
+    pub fn set_is_next_enabled(&self, enabled: bool) {
+        unsafe {
+            self.remote_command_center.nextTrackCommand().setEnabled_(enabled as i8);
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
         return true;
     }
 
-    pub fn set_is_next_enabled(&self, _enabled: bool) {}
+    pub fn set_is_enabled(&self, _enabled: bool) {}
 }
