@@ -67,12 +67,16 @@ impl MediaService {
 
     fn get_metadata(&self, key: MPMediaItemProperty) -> String
     {
-        let value: NSString;
+        let value: Option<NSString>;
         unsafe{
             let key = mpmedia_item_property_to_key(key);
             value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: key);
         }
-        return value.to_string();
+
+        match value {
+            Some(n) => return n.to_string(),
+            None => return "".to_string(),
+        }
     }
 
     // region Control
