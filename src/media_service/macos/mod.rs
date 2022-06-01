@@ -102,7 +102,7 @@ impl MediaService {
         let state = match status{
             1 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
             2 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped,
-            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
+            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown, // There's no Changing status in MacOS so we maps this to Unknown
             4 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused,
             _ => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown,
         };
@@ -111,6 +111,37 @@ impl MediaService {
             self.info_center.setPlaybackState_(state);
         }
     }
+
+    pub fn get_media_type(&self) -> i32 {
+        let value: Option<MPNowPlayingPlaybackState>;
+        unsafe{
+            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
+        }
+
+        match value {
+            None => return 0, // Return Unknown
+            Some(n) => {
+                return match n {
+                    MPMediaType_MPMediaTypeMusic => 1,
+                    MPMediaType_MPMediaTypeAnyVideo => 2,
+                    _ => 0, // Return Unknown
+                }
+            }
+        }
+    }
+
+    pub fn set_media_type(&self, media_type: i32) {
+        let state = match media_type{
+            1 => MPMediaType_MPMediaTypeMusic,
+            2 => MPMediaType_MPMediaTypeAnyVideo,
+            3 => MPMediaType_MPMediaTypeAny, // There's no separate type for Image in MacOS, so we maps it also to Any
+            _ => MPMediaType_MPMediaTypeAny,
+        };
+        
+        unsafe {
+            self.info_center.setPlaybackState_(state);
+        }
+    }  
 
     pub fn get_artist(&self) -> String {
         return self.get_metadata(MPMediaItemProperty::Artist);
@@ -273,10 +304,4 @@ impl MediaService {
     }
 
     pub fn set_is_next_enabled(&self, _enabled: bool) {}
-
-    pub fn get_media_type(&self) -> i32 {
-        return -1;
-    }
-
-    pub fn set_media_type(&self, _media_type: i32) {}
 }
