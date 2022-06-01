@@ -5,14 +5,14 @@
         "test": "node --napi-modules ./test/test_binding.js",
         "build:lib": "tsc",
         "build:test": "npm run build && npm test",
-        "build": "cargo-cp-artifact -nc build/xosms-native.node -- cargo build --message-format=json-render-diagnostics --target=x86_64-apple-darwin",
+        "build": "cargo-cp-artifact -nc build/xosms-native.node -- cargo build --message-format=json-render-diagnostics",
         "build-debug": "npm run build --",
         "build-release": "npm run build -- --release",
         "install": "npm run build-release",
         "cargo:test": "cargo test"
     },
     "name": "xosms",
-    "version": "0.3.0",
+    "version": "0.2.0",
     "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
     "repository": {
         "type": "git",
