@@ -136,7 +136,7 @@ impl MediaService {
             .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
 
         du.SetType(MediaPlaybackType::from(media_type))
-            .expect("Failed to get DisplayUpdater.Type");
+            .expect("Failed to set DisplayUpdater.Type");
         du.Update();
     }
 
