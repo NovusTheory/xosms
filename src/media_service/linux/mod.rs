@@ -426,7 +426,7 @@ impl MediaService {
         return -1;
     }
 
-    pub fn remove_button_presed_callback(&mut self) {}
+    pub fn remove_button_pressed_callback(&mut self) {}
     // endregion Events
 }
 

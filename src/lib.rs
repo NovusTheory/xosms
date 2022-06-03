@@ -279,7 +279,7 @@ fn media_service_set_button_callback(mut cx: FunctionContext) -> JsResult<JsStri
     let mut service = service.borrow_mut();
 
     // Remove any previous registered callbacks
-    service.remove_button_presed_callback();
+    service.remove_button_pressed_callback();
 
     let argument = cx.argument_opt(1);
     if let Some(callback) = argument {

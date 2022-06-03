@@ -338,7 +338,7 @@ impl MediaService {
         return token.Value;
     }
 
-    pub fn remove_button_presed_callback(&mut self) {
+    pub fn remove_button_pressed_callback(&mut self) {
         for token in self.active_buttons.iter() {
             self.smtc.RemoveButtonPressed(token);
         }
