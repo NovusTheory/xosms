@@ -2,13 +2,6 @@
 #[macro_use]
 extern crate objc;
 
-#[cfg_attr(target_os = "windows", path = "media_service/windows.rs")]
-#[cfg_attr(target_os = "linux", path = "media_service/linux/mod.rs")]
-#[cfg_attr(target_os = "macos", path = "media_service/macos/mod.rs")]
-#[cfg_attr(
-    not(any(target_os = "windows", target_os = "linux", target_os = "macos")),
-    path = "media_service/unsupported.rs"
-)]
 mod media_service;
 
 use media_service::MediaService;

@@ -1,13 +1,5 @@
 fn main() {
     println!("cargo:rerun-if-changed=src/build.rs");
-    #[cfg(target_os = "windows")]
-    windows::build! {
-        Windows::Media::{SystemMediaTransportControls, MediaPlaybackStatus, MusicDisplayProperties, SystemMediaTransportControlsDisplayUpdater, MediaPlaybackType, SystemMediaTransportControlsButtonPressedEventArgs, SystemMediaTransportControlsButton},
-        Windows::Media::Playback::{MediaPlayer, MediaPlaybackCommandManager},
-        Windows::Storage::Streams::RandomAccessStreamReference,
-        Windows::Foundation::{Uri, TypedEventHandler, EventRegistrationToken}
-    }
-
     #[cfg(target_os = "macos")]
     {
         let sdk_path_output = std::process::Command::new("xcrun")

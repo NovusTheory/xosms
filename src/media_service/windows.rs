@@ -1,16 +1,14 @@
-windows::include_bindings!();
-
+use ::windows::core::HSTRING;
+use ::windows::Foundation::{EventRegistrationToken, TypedEventHandler, Uri};
+use ::windows::Media::Playback::MediaPlayer;
+use ::windows::Media::{
+    MediaPlaybackStatus, MediaPlaybackType, SystemMediaTransportControls,
+    SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
+};
+use ::windows::Storage::Streams::RandomAccessStreamReference;
 use neon::event::Channel;
 use neon::prelude::*;
-use std::borrow::Borrow;
-use Windows::Foundation::{EventRegistrationToken, TypedEventHandler, Uri};
-use Windows::Media::Playback::MediaPlayer;
-use Windows::Media::{
-    MediaPlaybackStatus, MediaPlaybackType, MusicDisplayProperties, SystemMediaTransportControls,
-    SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
-    SystemMediaTransportControlsDisplayUpdater,
-};
-use Windows::Storage::Streams::RandomAccessStreamReference;
+use neon::result::Throw;
 
 pub struct MediaService {
     player: MediaPlayer,
@@ -135,7 +133,7 @@ impl MediaService {
             .DisplayUpdater()
             .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
 
-        du.SetType(MediaPlaybackType::from(media_type))
+        du.SetType(MediaPlaybackType(media_type))
             .expect("Failed to set DisplayUpdater.Type");
         du.Update();
     }
@@ -150,7 +148,7 @@ impl MediaService {
 
     pub fn set_playback_status(&self, status: i32) {
         self.smtc
-            .SetPlaybackStatus(MediaPlaybackStatus::from(status))
+            .SetPlaybackStatus(MediaPlaybackStatus(status))
             .expect("Failed to set SystemMediaTransportControls.SetPlaybackStatus");
     }
 
@@ -178,7 +176,7 @@ impl MediaService {
             .MusicProperties()
             .expect("Failed to get DisplayUpdater.MusicProperties");
 
-        mp.SetArtist(artist);
+        mp.SetArtist(HSTRING::from(artist));
         du.Update();
     }
 
@@ -206,7 +204,7 @@ impl MediaService {
             .MusicProperties()
             .expect("Failed to get DisplayUpdater.MusicProperties");
 
-        mp.SetAlbumArtist(album_artist);
+        mp.SetAlbumArtist(HSTRING::from(album_artist));
         du.Update();
     }
 
@@ -234,7 +232,7 @@ impl MediaService {
             .MusicProperties()
             .expect("Failed to get DisplayUpdater.MusicProperties");
 
-        mp.SetAlbumTitle(album_title);
+        mp.SetAlbumTitle(HSTRING::from(album_title));
         du.Update();
     }
 
@@ -262,7 +260,7 @@ impl MediaService {
             .MusicProperties()
             .expect("Failed to get DisplayUpdater.MusicProperties");
 
-        mp.SetTitle(title);
+        mp.SetTitle(HSTRING::from(title));
         du.Update();
     }
 
@@ -277,9 +275,10 @@ impl MediaService {
             .smtc
             .DisplayUpdater()
             .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let stream = match thumbnail_type {
+        let stream: Result<RandomAccessStreamReference, _> = match thumbnail_type {
             2 => RandomAccessStreamReference::CreateFromUri(
-                Uri::CreateUri(thumbnail).expect("Failed to create Foundation.Uri from thumbnail"),
+                Uri::CreateUri(HSTRING::from(thumbnail))
+                    .expect("Failed to create Foundation.Uri from thumbnail"),
             ),
             _ => panic!(),
         };

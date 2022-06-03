@@ -25,10 +25,7 @@ dbus = "0.9.5"
 dbus-crossroads = "0.5.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = "0.21.1"
-
-[target.'cfg(target_os = "windows")'.build-dependencies]
-windows = "0.21.1"
+windows = { version = "0.37.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
 
 [dependencies.neon]
 version = "0.9"
