@@ -4,6 +4,7 @@ extern crate objc;
 
 mod media_service;
 
+use media_service::service_trait::MediaServiceTrait;
 use media_service::MediaService;
 use neon::prelude::*;
 use std::cell::RefCell;
@@ -27,8 +28,12 @@ fn media_service_is_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let service = service.borrow();
 
     let is_enabled = service.is_enabled();
+    if is_enabled.is_err() {
+        let err_string = cx.string(is_enabled.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.boolean(is_enabled))
+    Ok(cx.boolean(is_enabled.unwrap()))
 }
 
 fn media_service_set_is_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -36,7 +41,11 @@ fn media_service_set_is_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined
     let service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
-    service.set_is_enabled(enabled);
+    let enabled_result = service.set_is_enabled(enabled);
+    if enabled_result.is_err() {
+        let err_string = cx.string(enabled_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -48,8 +57,12 @@ fn media_service_is_play_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean>
     let service = service.borrow();
 
     let is_play_enabled = service.is_play_enabled();
+    if is_play_enabled.is_err() {
+        let err_string = cx.string(is_play_enabled.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.boolean(is_play_enabled))
+    Ok(cx.boolean(is_play_enabled.unwrap()))
 }
 
 fn media_service_set_is_play_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -57,7 +70,11 @@ fn media_service_set_is_play_enabled(mut cx: FunctionContext) -> JsResult<JsUnde
     let service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
-    service.set_is_play_enabled(enabled);
+    let play_enabled_result = service.set_is_play_enabled(enabled);
+    if play_enabled_result.is_err() {
+        let err_string = cx.string(play_enabled_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -66,9 +83,13 @@ fn media_service_is_pause_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean
     let service = cx.argument::<BoxedMediaService>(0)?;
     let service = service.borrow();
 
-    let is_play_enabled = service.is_pause_enabled();
+    let is_pause_enabled = service.is_pause_enabled();
+    if is_pause_enabled.is_err() {
+        let err_string = cx.string(is_pause_enabled.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.boolean(is_play_enabled))
+    Ok(cx.boolean(is_pause_enabled.unwrap()))
 }
 
 fn media_service_set_is_pause_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -76,7 +97,11 @@ fn media_service_set_is_pause_enabled(mut cx: FunctionContext) -> JsResult<JsUnd
     let service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
-    service.set_is_pause_enabled(enabled);
+    let pause_enabled_result = service.set_is_pause_enabled(enabled);
+    if pause_enabled_result.is_err() {
+        let err_string = cx.string(pause_enabled_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -85,9 +110,13 @@ fn media_service_is_previous_enabled(mut cx: FunctionContext) -> JsResult<JsBool
     let service = cx.argument::<BoxedMediaService>(0)?;
     let service = service.borrow();
 
-    let is_play_enabled = service.is_previous_enabled();
+    let is_previous_enabled = service.is_previous_enabled();
+    if is_previous_enabled.is_err() {
+        let err_string = cx.string(is_previous_enabled.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.boolean(is_play_enabled))
+    Ok(cx.boolean(is_previous_enabled.unwrap()))
 }
 
 fn media_service_set_is_previous_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -95,7 +124,11 @@ fn media_service_set_is_previous_enabled(mut cx: FunctionContext) -> JsResult<Js
     let service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
-    service.set_is_previous_enabled(enabled);
+    let previous_enabled_result = service.set_is_previous_enabled(enabled);
+    if previous_enabled_result.is_err() {
+        let err_string = cx.string(previous_enabled_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -104,9 +137,13 @@ fn media_service_is_next_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean>
     let service = cx.argument::<BoxedMediaService>(0)?;
     let service = service.borrow();
 
-    let is_play_enabled = service.is_next_enabled();
+    let is_next_enabled = service.is_next_enabled();
+    if is_next_enabled.is_err() {
+        let err_string = cx.string(is_next_enabled.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.boolean(is_play_enabled))
+    Ok(cx.boolean(is_next_enabled.unwrap()))
 }
 
 fn media_service_set_is_next_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -114,7 +151,11 @@ fn media_service_set_is_next_enabled(mut cx: FunctionContext) -> JsResult<JsUnde
     let service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
-    service.set_is_next_enabled(enabled);
+    let next_enabled_result = service.set_is_next_enabled(enabled);
+    if next_enabled_result.is_err() {
+        let err_string = cx.string(next_enabled_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -126,8 +167,12 @@ fn media_service_get_media_type(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let service = service.borrow();
 
     let media_type = service.get_media_type();
+    if media_type.is_err() {
+        let err_string = cx.string(media_type.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.number(media_type))
+    Ok(cx.number(media_type.unwrap()))
 }
 
 fn media_service_set_media_type(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -135,7 +180,11 @@ fn media_service_set_media_type(mut cx: FunctionContext) -> JsResult<JsUndefined
     let service = service.borrow_mut();
 
     let media_type = cx.argument::<JsNumber>(1)?.value(&mut cx);
-    service.set_media_type(media_type as i32);
+    let media_type_result = service.set_media_type(media_type as i32);
+    if media_type_result.is_err() {
+        let err_string = cx.string(media_type_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -145,8 +194,12 @@ fn media_service_get_playback_status(mut cx: FunctionContext) -> JsResult<JsNumb
     let service = service.borrow();
 
     let playback_status = service.get_playback_status();
+    if playback_status.is_err() {
+        let err_string = cx.string(playback_status.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.number(playback_status))
+    Ok(cx.number(playback_status.unwrap()))
 }
 
 fn media_service_set_playback_status(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -154,7 +207,11 @@ fn media_service_set_playback_status(mut cx: FunctionContext) -> JsResult<JsUnde
     let service = service.borrow_mut();
 
     let playback_status = cx.argument::<JsNumber>(1)?.value(&mut cx);
-    service.set_playback_status(playback_status as i32);
+    let playback_status_result = service.set_playback_status(playback_status as i32);
+    if playback_status_result.is_err() {
+        let err_string = cx.string(playback_status_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -164,8 +221,12 @@ fn media_service_get_artist(mut cx: FunctionContext) -> JsResult<JsString> {
     let service = service.borrow();
 
     let artist = service.get_artist();
+    if artist.is_err() {
+        let err_string = cx.string(artist.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.string(artist))
+    Ok(cx.string(artist.unwrap()))
 }
 
 fn media_service_set_artist(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -173,7 +234,11 @@ fn media_service_set_artist(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = service.borrow_mut();
 
     let artist = cx.argument::<JsString>(1)?.value(&mut cx);
-    service.set_artist(artist);
+    let artist_result = service.set_artist(artist);
+    if artist_result.is_err() {
+        let err_string = cx.string(artist_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -183,8 +248,12 @@ fn media_service_get_album_artist(mut cx: FunctionContext) -> JsResult<JsString>
     let service = service.borrow();
 
     let album_artist = service.get_album_artist();
+    if album_artist.is_err() {
+        let err_string = cx.string(album_artist.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.string(album_artist))
+    Ok(cx.string(album_artist.unwrap()))
 }
 
 fn media_service_set_album_artist(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -192,7 +261,11 @@ fn media_service_set_album_artist(mut cx: FunctionContext) -> JsResult<JsUndefin
     let service = service.borrow_mut();
 
     let album_artist = cx.argument::<JsString>(1)?.value(&mut cx);
-    service.set_album_artist(album_artist);
+    let album_artist_result = service.set_album_artist(album_artist);
+    if album_artist_result.is_err() {
+        let err_string = cx.string(album_artist_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -202,8 +275,12 @@ fn media_service_get_album_title(mut cx: FunctionContext) -> JsResult<JsString> 
     let service = service.borrow();
 
     let album_title = service.get_album_title();
+    if album_title.is_err() {
+        let err_string = cx.string(album_title.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.string(album_title))
+    Ok(cx.string(album_title.unwrap()))
 }
 
 fn media_service_set_album_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -211,7 +288,11 @@ fn media_service_set_album_title(mut cx: FunctionContext) -> JsResult<JsUndefine
     let service = service.borrow_mut();
 
     let album_title = cx.argument::<JsString>(1)?.value(&mut cx);
-    service.set_album_title(album_title);
+    let album_title_result = service.set_album_title(album_title);
+    if album_title_result.is_err() {
+        let err_string = cx.string(album_title_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -221,8 +302,12 @@ fn media_service_get_title(mut cx: FunctionContext) -> JsResult<JsString> {
     let service = service.borrow();
 
     let title = service.get_title();
+    if title.is_err() {
+        let err_string = cx.string(title.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.string(title))
+    Ok(cx.string(title.unwrap()))
 }
 
 fn media_service_set_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -230,7 +315,11 @@ fn media_service_set_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = service.borrow_mut();
 
     let title = cx.argument::<JsString>(1)?.value(&mut cx);
-    service.set_title(title);
+    let title_result = service.set_title(title);
+    if title_result.is_err() {
+        let err_string = cx.string(title_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -240,8 +329,12 @@ fn media_service_get_track_id(mut cx: FunctionContext) -> JsResult<JsString> {
     let service = service.borrow();
 
     let track_id = service.get_track_id();
+    if track_id.is_err() {
+        let err_string = cx.string(track_id.unwrap_err());
+        return cx.throw(err_string);
+    }
 
-    Ok(cx.string(track_id))
+    Ok(cx.string(track_id.unwrap()))
 }
 
 fn media_service_set_track_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -249,7 +342,11 @@ fn media_service_set_track_id(mut cx: FunctionContext) -> JsResult<JsUndefined> 
     let service = service.borrow_mut();
 
     let track_id = cx.argument::<JsString>(1)?.value(&mut cx);
-    service.set_track_id(track_id);
+    let track_id_result = service.set_track_id(track_id);
+    if track_id_result.is_err() {
+        let err_string = cx.string(track_id_result.unwrap_err());
+        return cx.throw(err_string);
+    }
 
     Ok(cx.undefined())
 }
@@ -283,8 +380,12 @@ fn media_service_set_button_callback(mut cx: FunctionContext) -> JsResult<JsStri
             channel.unref(&mut cx);
 
             let token = service.set_button_pressed_callback(callback, channel);
-
-            return Ok(cx.string(token.to_string()));
+            if token.is_ok() {
+                return Ok(cx.string(token.unwrap().to_string()));
+            } else {
+                let err_string = cx.string("Failed to set a button press callback");
+                return cx.throw(err_string);
+            }
         }
     }
 

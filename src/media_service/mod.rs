@@ -1,3 +1,5 @@
+pub mod service_trait;
+
 #[cfg(target_os = "windows")]
 include!("windows.rs");
 #[cfg(target_os = "windows")]

@@ -84,138 +84,6 @@ impl MediaService {
         }
     }
 
-    pub fn get_playback_status(&self) -> i32 {
-        let value: Option<MPNowPlayingPlaybackState>;
-        unsafe {
-            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
-        }
-
-        match value {
-            None => return -1,
-            Some(n) => {
-                return match n {
-                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying => 1,
-                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped => 2,
-                    MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused => 4,
-                    _ => -1,
-                }
-            }
-        }
-    }
-
-    pub fn set_playback_status(&self, status: i32) {
-        let state = match status {
-            1 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
-            2 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped,
-            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown, // There's no Changing status in MacOS so we maps this to Unknown
-            4 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused,
-            _ => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown,
-        };
-
-        unsafe {
-            self.info_center.setPlaybackState_(state);
-        }
-    }
-
-    pub fn get_media_type(&self) -> i32 {
-        let value: Option<MPNowPlayingPlaybackState>;
-        unsafe {
-            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
-        }
-
-        match value {
-            None => return 0, // Return Unknown
-            Some(n) => {
-                return match n {
-                    MPMediaType_MPMediaTypeMusic => 1,
-                    MPMediaType_MPMediaTypeAnyVideo => 2,
-                    _ => 0, // Return Unknown
-                };
-            }
-        }
-    }
-
-    pub fn set_media_type(&self, media_type: i32) {
-        let state = match media_type {
-            1 => MPMediaType_MPMediaTypeMusic,
-            2 => MPMediaType_MPMediaTypeAnyVideo,
-            3 => MPMediaType_MPMediaTypeAny, // There's no separate type for Image in MacOS, so we maps it also to Any
-            _ => MPMediaType_MPMediaTypeAny,
-        };
-
-        unsafe {
-            self.info_center.setPlaybackState_(state);
-        }
-    }
-
-    pub fn get_artist(&self) -> String {
-        return self.get_metadata(MPMediaItemProperty::Artist);
-    }
-
-    pub fn set_artist(&self, artist: String) {
-        self.set_metadata(MPMediaItemProperty::Artist, artist);
-    }
-
-    pub fn get_album_artist(&self) -> String {
-        return self.get_metadata(MPMediaItemProperty::AlbumArtist);
-    }
-
-    pub fn set_album_artist(&self, album_artist: String) {
-        self.set_metadata(MPMediaItemProperty::AlbumArtist, album_artist);
-    }
-
-    pub fn get_album_title(&self) -> String {
-        return self.get_metadata(MPMediaItemProperty::AlbumTitle);
-    }
-
-    pub fn set_album_title(&self, album_title: String) {
-        self.set_metadata(MPMediaItemProperty::AlbumTitle, album_title);
-    }
-
-    pub fn get_title(&self) -> String {
-        return self.get_metadata(MPMediaItemProperty::Title);
-    }
-
-    pub fn set_title(&self, title: String) {
-        self.set_metadata(MPMediaItemProperty::Title, title);
-    }
-
-    pub fn get_track_id(&self) -> String {
-        return self.get_metadata(MPMediaItemProperty::TrackID);
-    }
-
-    pub fn set_track_id(&self, track_id: String) {
-        self.set_metadata(MPMediaItemProperty::TrackID, track_id);
-    }
-
-    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
-        unsafe {
-            let path: id =
-                msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
-            let img: NSImage;
-            match thumbnail_type {
-                1 => {
-                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfFile: path);
-                }
-                2 => {
-                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: path);
-                }
-                _ => {
-                    println!("Unsupported thumbnail type: {}", thumbnail_type);
-                    return;
-                }
-            }
-            let size: bindings::NSSize = msg_send!(img, size);
-            let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
-                return img.clone();
-            });
-            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
-            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-            self.info_center
-                .setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-        }
-    }
-
     fn send_button_pressed(
         callback: Arc<Root<JsFunction>>,
         channel: Channel,
@@ -230,12 +98,159 @@ impl MediaService {
             Ok(())
         });
     }
+}
 
-    pub fn set_button_pressed_callback(
-        &mut self,
-        callback: Root<JsFunction>,
-        channel: Channel,
-    ) -> i64 {
+impl MediaServiceTrait for MediaService {
+    fn get_playback_status(&self) -> Result<i32, String> {
+        let value: Option<MPNowPlayingPlaybackState>;
+        unsafe {
+            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
+        }
+
+        let return_value = match value {
+            None => -1,
+            Some(n) => match n {
+                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying => 1,
+                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped => 2,
+                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused => 4,
+                _ => -1,
+            },
+        };
+
+        Ok(return_value)
+    }
+
+    fn set_playback_status(&self, status: i32) -> Result<(), String> {
+        let state = match status {
+            1 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
+            2 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped,
+            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown, // There's no Changing status in MacOS so we maps this to Unknown
+            4 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused,
+            _ => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown,
+        };
+
+        unsafe {
+            self.info_center.setPlaybackState_(state);
+        }
+
+        Ok(())
+    }
+
+    fn get_media_type(&self) -> Result<i32, String> {
+        let value: Option<MPNowPlayingPlaybackState>;
+        unsafe {
+            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
+        }
+
+        let return_value = match value {
+            None => 0, // Return Unknown
+            Some(n) => {
+                match n {
+                    MPMediaType_MPMediaTypeMusic => 1,
+                    MPMediaType_MPMediaTypeAnyVideo => 2,
+                    _ => 0, // Return Unknown
+                }
+            }
+        };
+
+        Ok(return_value)
+    }
+
+    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
+        let state = match media_type {
+            1 => MPMediaType_MPMediaTypeMusic,
+            2 => MPMediaType_MPMediaTypeAnyVideo,
+            3 => MPMediaType_MPMediaTypeAny, // There's no separate type for Image in MacOS, so we maps it also to Any
+            _ => MPMediaType_MPMediaTypeAny,
+        };
+
+        unsafe {
+            self.info_center.setPlaybackState_(state);
+        }
+
+        Ok(())
+    }
+
+    fn get_artist(&self) -> Result<String, String> {
+        Ok(self.get_metadata(MPMediaItemProperty::Artist))
+    }
+
+    fn set_artist(&self, artist: String) -> Result<(), String> {
+        self.set_metadata(MPMediaItemProperty::Artist, artist);
+
+        Ok(())
+    }
+
+    fn get_album_artist(&self) -> Result<String, String> {
+        Ok(self.get_metadata(MPMediaItemProperty::AlbumArtist));
+    }
+
+    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
+        self.set_metadata(MPMediaItemProperty::AlbumArtist, album_artist);
+
+        Ok(())
+    }
+
+    fn get_album_title(&self) -> Result<String, String> {
+        Ok(self.get_metadata(MPMediaItemProperty::AlbumTitle));
+    }
+
+    fn set_album_title(&self, album_title: String) -> Result<(), String>) {
+        self.set_metadata(MPMediaItemProperty::AlbumTitle, album_title);
+
+        Ok(())
+    }
+
+    fn get_title(&self) -> Result<String, String> {
+        Ok(self.get_metadata(MPMediaItemProperty::Title));
+    }
+
+    fn set_title(&self, title: String) -> Result<(), String> {
+        self.set_metadata(MPMediaItemProperty::Title, title);
+
+        Ok(())
+    }
+
+    fn get_track_id(&self) -> Result<String, String> {
+        Ok(self.get_metadata(MPMediaItemProperty::TrackID));
+    }
+
+    fn set_track_id(&self, track_id: String) -> Result<(), String> {
+        self.set_metadata(MPMediaItemProperty::TrackID, track_id);
+
+        Ok(())
+    }
+
+    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+        unsafe {
+            let path: id =
+                msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
+            let img: NSImage;
+            match thumbnail_type {
+                1 => {
+                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfFile: path);
+                }
+                2 => {
+                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: path);
+                }
+                _ => {
+                    return Err(format!("Thumbnail type is not supported on this operating system: {}", thumbnail_type));
+                }
+            }
+            let size: bindings::NSSize = msg_send!(img, size);
+            let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
+                return img.clone();
+            });
+            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
+            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
+            self.info_center
+                .setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
+
+            Ok(())
+        }
+    }
+
+    fn set_button_pressed_callback(&mut self, callback: Root<JsFunction>, channel: Channel) -> Result<i64, String> {
         unsafe {
             let callback = std::sync::Arc::new(callback);
 
@@ -294,74 +309,83 @@ impl MediaService {
                 .previousTrackCommand()
                 .addTargetWithHandler_(&*command_handler);
         }
-        return -1;
+        
+        Ok(-1);
     }
 
-    pub fn remove_button_pressed_callback(&mut self) {}
+    fn remove_button_pressed_callback(&mut self) -> Result<(), String> { Ok(()) }
 
-    pub fn is_play_enabled(&self) -> bool {
+    fn is_play_enabled(&self) -> Result<bool, String> {
         unsafe {
-            return self.remote_command_center.playCommand().isEnabled() != 0;
+            Ok(self.remote_command_center.playCommand().isEnabled() != 0);
         }
     }
 
-    pub fn set_is_play_enabled(&self, enabled: bool) {
+    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
         unsafe {
             self.remote_command_center
                 .playCommand()
                 .setEnabled_(enabled as i8);
         }
+
+        Ok(())
     }
 
-    pub fn is_pause_enabled(&self) -> bool {
+    fn is_pause_enabled(&self) -> Result<bool, String> {
         unsafe {
-            return self.remote_command_center.pauseCommand().isEnabled() != 0;
+            Ok(self.remote_command_center.pauseCommand().isEnabled() != 0);
         }
     }
 
-    pub fn set_is_pause_enabled(&self, enabled: bool) {
+    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
         unsafe {
             self.remote_command_center
                 .pauseCommand()
                 .setEnabled_(enabled as i8);
         }
+
+        Ok(())
     }
 
-    pub fn is_previous_enabled(&self) -> bool {
+    fn is_previous_enabled(&self) -> Result<bool, String> {
         unsafe {
-            return self
+            Ok(self
                 .remote_command_center
                 .previousTrackCommand()
                 .isEnabled()
-                != 0;
+                != 0);
         }
     }
 
-    pub fn set_is_previous_enabled(&self, enabled: bool) {
+    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
         unsafe {
             self.remote_command_center
                 .previousTrackCommand()
                 .setEnabled_(enabled as i8);
         }
+
+        Ok(())
     }
 
-    pub fn is_next_enabled(&self) -> bool {
+    fn is_next_enabled(&self) -> Result<bool, String> {
         unsafe {
-            return self.remote_command_center.nextTrackCommand().isEnabled() != 0;
+            Ok(self.remote_command_center.nextTrackCommand().isEnabled() != 0);
         }
     }
 
-    pub fn set_is_next_enabled(&self, enabled: bool) {
+    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
         unsafe {
             self.remote_command_center
                 .nextTrackCommand()
                 .setEnabled_(enabled as i8);
         }
+
+        Ok(())
     }
 
-    pub fn is_enabled(&self) -> bool {
-        return true;
+    fn is_enabled(&self) -> Result<bool, String> {
+        Ok(true);
     }
 
-    pub fn set_is_enabled(&self, _enabled: bool) {}
+    fn set_is_enabled(&self, _enabled: bool) -> Result<(), String> { Ok(()) }
 }

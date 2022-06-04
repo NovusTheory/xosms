@@ -14,6 +14,7 @@ use neon::event::Channel;
 use neon::prelude::*;
 use std::sync::{mpsc, Arc, RwLock};
 
+use crate::media_service::service_trait::MediaServiceTrait;
 use media_player::{
     register_org_mpris_media_player2, register_org_mpris_media_player2_player,
     OrgMprisMediaPlayer2, OrgMprisMediaPlayer2Player,
@@ -127,13 +128,15 @@ impl MediaService {
             dbus_send: dbus_tx,
         }
     }
+}
 
+impl MediaServiceTrait for MediaService {
     // region Control
-    pub fn is_enabled(&self) -> bool {
-        return self.state.read().unwrap().can_control;
+    fn is_enabled(&self) -> Result<bool, String> {
+        Ok(self.state.read().unwrap().can_control)
     }
 
-    pub fn set_is_enabled(&self, enabled: bool) {
+    fn set_is_enabled(&self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_control = enabled;
         }
@@ -145,15 +148,17 @@ impl MediaService {
         ppc.add_prop("CanControl", EmitsChangedSignal::True, || Box::new(enabled));
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
     // endregion Control
 
     // region Buttons
-    pub fn is_play_enabled(&self) -> bool {
-        return self.state.read().unwrap().can_play;
+    fn is_play_enabled(&self) -> Result<bool, String> {
+        Ok(self.state.read().unwrap().can_play)
     }
 
-    pub fn set_is_play_enabled(&self, enabled: bool) {
+    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_play = enabled;
         }
@@ -165,13 +170,15 @@ impl MediaService {
         ppc.add_prop("CanPlay", EmitsChangedSignal::True, || Box::new(enabled));
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn is_pause_enabled(&self) -> bool {
-        return self.state.read().unwrap().can_pause;
+    fn is_pause_enabled(&self) -> Result<bool, String> {
+        Ok(self.state.read().unwrap().can_pause)
     }
 
-    pub fn set_is_pause_enabled(&self, enabled: bool) {
+    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_pause = enabled;
         }
@@ -183,13 +190,15 @@ impl MediaService {
         ppc.add_prop("CanPause", EmitsChangedSignal::True, || Box::new(enabled));
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn is_previous_enabled(&self) -> bool {
-        return self.state.read().unwrap().can_go_previous;
+    fn is_previous_enabled(&self) -> Result<bool, String> {
+        Ok(self.state.read().unwrap().can_go_previous)
     }
 
-    pub fn set_is_previous_enabled(&self, enabled: bool) {
+    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_go_previous = enabled;
         }
@@ -203,13 +212,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn is_next_enabled(&self) -> bool {
-        return self.state.read().unwrap().can_go_next;
+    fn is_next_enabled(&self) -> Result<bool, String> {
+        Ok(self.state.read().unwrap().can_go_next)
     }
 
-    pub fn set_is_next_enabled(&self, enabled: bool) {
+    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_go_next = enabled;
         }
@@ -221,23 +232,27 @@ impl MediaService {
         ppc.add_prop("CanGoNext", EmitsChangedSignal::True, || Box::new(enabled));
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
     // endregion Buttons
 
     // region Media Information
-    pub fn get_media_type(&self) -> i32 {
-        return self.state.read().unwrap().media_type;
+    fn get_media_type(&self) -> Result<i32, String> {
+        Ok(self.state.read().unwrap().media_type)
     }
 
-    pub fn set_media_type(&self, media_type: i32) {
+    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
         self.state.write().unwrap().media_type = media_type;
+
+        Ok(())
     }
 
-    pub fn get_playback_status(&self) -> i32 {
-        return self.state.read().unwrap().playback_status;
+    fn get_playback_status(&self) -> Result<i32, String> {
+        Ok(self.state.read().unwrap().playback_status)
     }
 
-    pub fn set_playback_status(&self, status: i32) {
+    fn set_playback_status(&self, status: i32) -> Result<(), String> {
         {
             self.state.write().unwrap().playback_status = status;
         }
@@ -259,13 +274,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn get_artist(&self) -> String {
-        return self.state.read().unwrap().artist.clone();
+    fn get_artist(&self) -> Result<String, String> {
+        Ok(self.state.read().unwrap().artist.clone())
     }
 
-    pub fn set_artist(&self, artist: String) {
+    fn set_artist(&self, artist: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:artist".to_string(),
@@ -285,13 +302,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn get_album_artist(&self) -> String {
-        return self.state.read().unwrap().album_artist.clone();
+    fn get_album_artist(&self) -> Result<String, String> {
+        Ok(self.state.read().unwrap().album_artist.clone())
     }
 
-    pub fn set_album_artist(&self, album_artist: String) {
+    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:albumArtist".to_string(),
@@ -311,13 +330,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn get_album_title(&self) -> String {
-        return self.state.read().unwrap().album_title.clone();
+    fn get_album_title(&self) -> Result<String, String> {
+        Ok(self.state.read().unwrap().album_title.clone())
     }
 
-    pub fn set_album_title(&self, album_title: String) {
+    fn set_album_title(&self, album_title: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:album".to_string(),
@@ -337,13 +358,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn get_title(&self) -> String {
-        return self.state.read().unwrap().title.clone();
+    fn get_title(&self) -> Result<String, String> {
+        Ok(self.state.read().unwrap().title.clone())
     }
 
-    pub fn set_title(&self, title: String) {
+    fn set_title(&self, title: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:title".to_string(),
@@ -363,13 +386,15 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn get_track_id(&self) -> String {
-        return self.state.read().unwrap().track_id.clone();
+    fn get_track_id(&self) -> Result<String, String> {
+        Ok(self.state.read().unwrap().track_id.clone())
     }
 
-    pub fn set_track_id(&self, track_id: String) {
+    fn set_track_id(&self, track_id: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "mpris:trackId".to_string(),
@@ -389,12 +414,20 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
 
-    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
+    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
         let art_url = match thumbnail_type {
+            1 => thumbnail,
             2 => thumbnail,
-            _ => panic!(),
+            _ => {
+                return Err(format!(
+                    "Thumbnail type is not supported on this operating system: {}",
+                    thumbnail_type
+                ))
+            }
         };
         {
             self.state.write().unwrap().metadata.insert(
@@ -412,21 +445,26 @@ impl MediaService {
         });
         self.dbus_send
             .send(ppc.to_emit_message(&Path::new("/org/mpris/MediaPlayer2").unwrap()));
+
+        Ok(())
     }
     // endregion Media Information
 
     // region Events
-    pub fn set_button_pressed_callback(
+    fn set_button_pressed_callback(
         &mut self,
         callback: Root<JsFunction>,
         channel: Channel,
-    ) -> i64 {
+    ) -> Result<i64, String> {
         self.state.write().unwrap().button_callback =
             Some(MprisPlayerButtonCallback { callback, channel });
-        return -1;
+
+        Ok(-1)
     }
 
-    pub fn remove_button_pressed_callback(&mut self) {}
+    fn remove_button_pressed_callback(&mut self) -> Result<(), String> {
+        Ok(())
+    }
     // endregion Events
 }
 

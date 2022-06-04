@@ -29,8 +29,10 @@ enum ThumbnailType {
 
 class MediaServiceProvider {
     private _nativeMediaService: IMediaService
+    private _callback: Function | null
 
     constructor(serviceName: string, identity: string) {
+        this._callback = null;
         this._nativeMediaService = native.createMediaService(serviceName, identity);
     }
 
@@ -82,6 +84,9 @@ class MediaServiceProvider {
     }
 
     public set mediaType(type: MediaType) {
+        if (type == MediaType.Unknown) {
+            throw new Error("MediaType.Unknown is not allowed to be explcitly set as it is reserved for the operating system and internal API to return.")
+        }
         native.mediaServiceSetMediaType(this._nativeMediaService, type);
     }
 
@@ -134,11 +139,18 @@ class MediaServiceProvider {
     }
 
     public setThumbnail(type: ThumbnailType, thumbnail: string) {
+        if (type == ThumbnailType.Unknown) {
+            throw new Error("ThumbnailType.Unknown is not allowed to be explcitly set as it is reserved for the operating system and internal API to return.")
+        }
         native.mediaServiceSetThumbnail(this._nativeMediaService, type, thumbnail);
     }
 
     // Events
     public set buttonPressed(callback: Function | null) {
+        if (this._callback != null) {
+            throw new Error("Xosms currently does not allow setting the button press callback multiple times or removing it.");
+        }
+        this._callback = callback;
         native.mediaServiceSetButtonCallback(this._nativeMediaService, callback)
     }
 }

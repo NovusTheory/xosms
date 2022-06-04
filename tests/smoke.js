@@ -66,8 +66,6 @@ async function ensureCanModifyMediaServiceProviderProperties() {
     instance.buttonPressed = (button) => {
         console.log("Pressed button", button)
     };
-    console.log("Removing button press callback");
-    instance.buttonPressed = null;
 }
 
 assert.doesNotThrow(ensureMediaServiceProviderIsCreated, undefined, "ensureMediaServiceProviderIsCreated threw an error")
