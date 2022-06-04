@@ -7,6 +7,8 @@ use neon::event::Channel;
 use neon::prelude::*;
 use std::sync::Arc;
 
+use crate::media_service::service_trait::MediaServiceTrait;
+
 use fruity::foundation::NSString;
 
 enum MPMediaItemProperty {
