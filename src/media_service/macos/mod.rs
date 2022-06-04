@@ -182,7 +182,7 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn get_album_artist(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::AlbumArtist));
+        Ok(self.get_metadata(MPMediaItemProperty::AlbumArtist))
     }
 
     fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
@@ -192,17 +192,17 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn get_album_title(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::AlbumTitle));
+        Ok(self.get_metadata(MPMediaItemProperty::AlbumTitle))
     }
 
-    fn set_album_title(&self, album_title: String) -> Result<(), String>) {
+    fn set_album_title(&self, album_title: String) -> Result<(), String> {
         self.set_metadata(MPMediaItemProperty::AlbumTitle, album_title);
 
         Ok(())
     }
 
     fn get_title(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::Title));
+        Ok(self.get_metadata(MPMediaItemProperty::Title))
     }
 
     fn set_title(&self, title: String) -> Result<(), String> {
@@ -212,7 +212,7 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn get_track_id(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::TrackID));
+        Ok(self.get_metadata(MPMediaItemProperty::TrackID))
     }
 
     fn set_track_id(&self, track_id: String) -> Result<(), String> {
@@ -234,7 +234,10 @@ impl MediaServiceTrait for MediaService {
                     img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: path);
                 }
                 _ => {
-                    return Err(format!("Thumbnail type is not supported on this operating system: {}", thumbnail_type));
+                    return Err(format!(
+                        "Thumbnail type is not supported on this operating system: {}",
+                        thumbnail_type
+                    ));
                 }
             }
             let size: bindings::NSSize = msg_send!(img, size);
@@ -250,7 +253,11 @@ impl MediaServiceTrait for MediaService {
         }
     }
 
-    fn set_button_pressed_callback(&mut self, callback: Root<JsFunction>, channel: Channel) -> Result<i64, String> {
+    fn set_button_pressed_callback(
+        &mut self,
+        callback: Root<JsFunction>,
+        channel: Channel,
+    ) -> Result<i64, String> {
         unsafe {
             let callback = std::sync::Arc::new(callback);
 
@@ -285,7 +292,6 @@ impl MediaServiceTrait for MediaService {
                         MediaService::send_button_pressed(callback, channel, "previous");
                         return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
                     }
-                    println!("MPRemoteCommand unknown");
                     return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
                 },
             );
@@ -309,16 +315,16 @@ impl MediaServiceTrait for MediaService {
                 .previousTrackCommand()
                 .addTargetWithHandler_(&*command_handler);
         }
-        
-        Ok(-1);
+
+        Ok(-1)
     }
 
-    fn remove_button_pressed_callback(&mut self) -> Result<(), String> { Ok(()) }
+    fn remove_button_pressed_callback(&mut self) -> Result<(), String> {
+        Ok(())
+    }
 
     fn is_play_enabled(&self) -> Result<bool, String> {
-        unsafe {
-            Ok(self.remote_command_center.playCommand().isEnabled() != 0);
-        }
+        unsafe { Ok(self.remote_command_center.playCommand().isEnabled() != 0) }
     }
 
     fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
@@ -332,9 +338,7 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn is_pause_enabled(&self) -> Result<bool, String> {
-        unsafe {
-            Ok(self.remote_command_center.pauseCommand().isEnabled() != 0);
-        }
+        unsafe { Ok(self.remote_command_center.pauseCommand().isEnabled() != 0) }
     }
 
     fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
@@ -353,7 +357,7 @@ impl MediaServiceTrait for MediaService {
                 .remote_command_center
                 .previousTrackCommand()
                 .isEnabled()
-                != 0);
+                != 0)
         }
     }
 
@@ -368,9 +372,7 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn is_next_enabled(&self) -> Result<bool, String> {
-        unsafe {
-            Ok(self.remote_command_center.nextTrackCommand().isEnabled() != 0);
-        }
+        unsafe { Ok(self.remote_command_center.nextTrackCommand().isEnabled() != 0) }
     }
 
     fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
@@ -384,8 +386,10 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn is_enabled(&self) -> Result<bool, String> {
-        Ok(true);
+        Ok(true)
     }
 
-    fn set_is_enabled(&self, _enabled: bool) -> Result<(), String> { Ok(()) }
+    fn set_is_enabled(&self, _enabled: bool) -> Result<(), String> {
+        Ok(())
+    }
 }
