@@ -13,83 +13,107 @@ impl MediaService {
     }
 
     // region Control
-    pub fn is_enabled(&self) -> bool {
-        return false;
+    pub fn is_enabled(&self) -> Result<bool, String> {
+        Ok(false)
     }
 
-    pub fn set_is_enabled(&self, enabled: bool) {}
+    pub fn set_is_enabled(&self, enabled: bool) -> Result<(), String> {
+        Ok(())
+    }
     // endregion Control
 
     // region Buttons
-    pub fn is_play_enabled(&self) -> bool {
-        return false;
+    pub fn is_play_enabled(&self) -> Result<bool, String> {
+        Ok(false);
     }
 
-    pub fn set_is_play_enabled(&self, enabled: bool) {}
-
-    pub fn is_pause_enabled(&self) -> bool {
-        return false;
+    pub fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
+        Ok(())
     }
 
-    pub fn set_is_pause_enabled(&self, enabled: bool) {}
-
-    pub fn is_previous_enabled(&self) -> bool {
-        return false;
+    pub fn is_pause_enabled(&self) -> Result<bool, String> {
+        Ok(false);
     }
 
-    pub fn set_is_previous_enabled(&self, enabled: bool) {}
-
-    pub fn is_next_enabled(&self) -> bool {
-        return false;
+    pub fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
+        Ok(())
     }
 
-    pub fn set_is_next_enabled(&self, enabled: bool) {}
+    pub fn is_previous_enabled(&self) -> Result<bool, String> {
+        Ok(false);
+    }
+
+    pub fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn is_next_enabled(&self) -> Result<bool, String> {
+        Ok(false);
+    }
+
+    pub fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {}
     // endregion Buttons
 
     // region Media Information
-    pub fn get_media_type(&self) -> i32 {
-        return -1;
+    pub fn get_media_type(&self) -> Result<i32, String> {
+        Ok(0);
     }
 
-    pub fn set_media_type(&self, media_type: i32) {}
-
-    pub fn get_playback_status(&self) -> i32 {
-        return -1;
+    pub fn set_media_type(&self, media_type: i32) -> Result<(), String> {
+        Ok(())
     }
 
-    pub fn set_playback_status(&self, status: i32) {}
-
-    pub fn get_artist(&self) -> String {
-        return "".to_string();
+    pub fn get_playback_status(&self) -> Result<i32, String> {
+        Ok(0);
     }
 
-    pub fn set_artist(&self, artist: String) {}
-
-    pub fn get_album_artist(&self) -> String {
-        return "".to_string();
+    pub fn set_playback_status(&self, status: i32) -> Result<(), String> {
+        Ok(())
     }
 
-    pub fn set_album_artist(&self, album_artist: String) {}
-
-    pub fn get_album_title(&self) -> String {
-        return "".to_string();
+    pub fn get_artist(&self) -> Result<String, String> {
+        Ok("".to_string());
     }
 
-    pub fn set_album_title(&self, album_title: String) {}
-
-    pub fn get_title(&self) -> String {
-        return "".to_string();
+    pub fn set_artist(&self, artist: String) -> Result<(), String> {
+        Ok(())
     }
 
-    pub fn set_title(&self, title: String) {}
-
-    pub fn get_track_id(&self) -> String {
-        return "".to_string();
+    pub fn get_album_artist(&self) -> Result<String, String> {
+        Ok("".to_string());
     }
 
-    pub fn set_track_id(&self, track_id: String) {}
+    pub fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
+        Ok(())
+    }
 
-    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {}
+    pub fn get_album_title(&self) -> Result<String, String> {
+        Ok("".to_string());
+    }
+
+    pub fn set_album_title(&self, album_title: String) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn get_title(&self) -> Result<String, String> {
+        Ok("".to_string());
+    }
+
+    pub fn set_title(&self, title: String) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn get_track_id(&self) -> Result<String, String> {
+        Ok("".to_string());
+    }
+
+    pub fn set_track_id(&self, track_id: String) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+        Ok(())
+    }
     // endregion Media Information
 
     // region Events
@@ -97,10 +121,12 @@ impl MediaService {
         &mut self,
         callback: Root<JsFunction>,
         channel: Channel,
-    ) -> i64 {
-        return -1;
+    ) -> Result<i64, String> {
+        Ok(-1);
     }
 
-    pub fn remove_button_presed_callback(&mut self) {}
+    pub fn remove_button_pressed_callback(&mut self) -> Result<(), String> {
+        Ok(())
+    }
     // endregion Events
 }

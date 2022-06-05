@@ -1,6 +1,6 @@
 [package]
 name = "xosms"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2018"
 exclude = ["build/xosms-native.node"]
 build = "src/build.rs"
@@ -12,15 +12,20 @@ crate-type = ["cdylib"]
 
 [dependencies]
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2.7"
+block = "0.1.6"
+fruity = { version = "0.2.0", features = ["foundation"] }
+
+[target.'cfg(target_os = "macos")'.build-dependencies]
+bindgen = "0.59.1"
+
 [target.'cfg(target_os = "linux")'.dependencies]
 dbus = "0.9.5"
 dbus-crossroads = "0.5.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = "0.21.1"
-
-[target.'cfg(target_os = "windows")'.build-dependencies]
-windows = "0.21.1"
+windows = { version = "0.37.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
 
 [dependencies.neon]
 version = "0.9"

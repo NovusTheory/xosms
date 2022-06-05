@@ -3,8 +3,8 @@ A cross platform media service library made in Rust for Node to easily and seame
 
 ## Current Platforms Supported
 - [x] Windows
-- [ ] MacOS
-- [x] Linux (MPRIS support added, but not ready)
+- [x] MacOS
+- [x] Linux (via MPRIS)
 
 Even if your platform above isn't currently supported, the beauty of xosms is that it will still compile for it but noop on everything.
 

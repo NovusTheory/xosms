@@ -1,16 +1,15 @@
-windows::include_bindings!();
-
+use ::windows::core::HSTRING;
+use ::windows::Foundation::{EventRegistrationToken, TypedEventHandler, Uri};
+use ::windows::Media::Playback::MediaPlayer;
+use ::windows::Media::{
+    MediaPlaybackStatus, MediaPlaybackType, SystemMediaTransportControls,
+    SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
+};
+use ::windows::Storage::Streams::RandomAccessStreamReference;
 use neon::event::Channel;
 use neon::prelude::*;
-use std::borrow::Borrow;
-use Windows::Foundation::{EventRegistrationToken, TypedEventHandler, Uri};
-use Windows::Media::Playback::MediaPlayer;
-use Windows::Media::{
-    MediaPlaybackStatus, MediaPlaybackType, MusicDisplayProperties, SystemMediaTransportControls,
-    SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
-    SystemMediaTransportControlsDisplayUpdater,
-};
-use Windows::Storage::Streams::RandomAccessStreamReference;
+
+use crate::media_service::service_trait::MediaServiceTrait;
 
 pub struct MediaService {
     player: MediaPlayer,
@@ -50,252 +49,362 @@ impl MediaService {
             active_channels: Vec::new(),
         }
     }
+}
 
+impl MediaServiceTrait for MediaService {
     // region Control
-    pub fn is_enabled(&self) -> bool {
-        return self
-            .smtc
-            .IsEnabled()
-            .expect("Failed to set SystemMediaTransportControls.IsEnabled");
+    fn is_enabled(&self) -> Result<bool, String> {
+        let get = self.smtc.IsEnabled();
+        if get.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.IsEnabled".to_string());
+        }
+
+        Ok(get.unwrap())
     }
 
-    pub fn set_is_enabled(&self, enabled: bool) {
-        self.smtc
-            .SetIsEnabled(enabled)
-            .expect("Failed to set SystemMediaTransportControls.SetIsEnabled");
+    fn set_is_enabled(&self, enabled: bool) -> Result<(), String> {
+        let set = self.smtc.SetIsEnabled(enabled);
+        if set.is_err() {
+            return Err("Failed to set SystemMediaTransportControls.SetIsEnabled".to_string());
+        }
+
+        Ok(())
     }
     // endregion Control
 
     // region Buttons
-    pub fn is_play_enabled(&self) -> bool {
-        return self
-            .smtc
-            .IsPlayEnabled()
-            .expect("Failed to get SystemMediaTransportControls.IsPlayEnabled");
+    fn is_play_enabled(&self) -> Result<bool, String> {
+        let get = self.smtc.IsPlayEnabled();
+        if get.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.IsPlayEnabled".to_string());
+        }
+
+        Ok(get.unwrap())
     }
 
-    pub fn set_is_play_enabled(&self, enabled: bool) {
-        self.smtc
-            .SetIsPlayEnabled(enabled)
-            .expect("Failed to set SystemMediaTransportControls.SetIsPlayEnabled");
+    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
+        let set = self.smtc.SetIsPlayEnabled(enabled);
+        if set.is_err() {
+            return Err("Failed to set SystemMediaTransportControls.SetIsPlayEnabled".to_string());
+        }
+
+        Ok(())
     }
 
-    pub fn is_pause_enabled(&self) -> bool {
-        return self
-            .smtc
-            .IsPauseEnabled()
-            .expect("Failed to get SystemMediaTransportControls.IsPauseEnabled");
+    fn is_pause_enabled(&self) -> Result<bool, String> {
+        let get = self.smtc.IsPauseEnabled();
+        if get.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.IsPauseEnabled".to_string());
+        }
+
+        Ok(get.unwrap())
     }
 
-    pub fn set_is_pause_enabled(&self, enabled: bool) {
-        self.smtc
-            .SetIsPauseEnabled(enabled)
-            .expect("Failed to set SystemMediaTransportControls.SetIsPauseEnabled");
+    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
+        let set = self.smtc.SetIsPauseEnabled(enabled);
+        if set.is_err() {
+            return Err("Failed to set SystemMediaTransportControls.SetIsPauseEnabled".to_string());
+        }
+
+        Ok(())
     }
 
-    pub fn is_previous_enabled(&self) -> bool {
-        return self
-            .smtc
-            .IsPreviousEnabled()
-            .expect("Failed to get SystemMediaTransportControls.IsPreviousEnabled");
+    fn is_previous_enabled(&self) -> Result<bool, String> {
+        let get = self.smtc.IsPreviousEnabled();
+        if get.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.IsPreviousEnabled".to_string());
+        }
+
+        Ok(get.unwrap())
     }
 
-    pub fn set_is_previous_enabled(&self, enabled: bool) {
-        self.smtc
-            .SetIsPreviousEnabled(enabled)
-            .expect("Failed to set SystemMediaTransportControls.SetIsPreviousEnabled");
+    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
+        let set = self.smtc.SetIsPreviousEnabled(enabled);
+        if set.is_err() {
+            return Err(
+                "Failed to set SystemMediaTransportControls.SetIsPreviousEnabled".to_string(),
+            );
+        }
+
+        Ok(())
     }
 
-    pub fn is_next_enabled(&self) -> bool {
-        return self
-            .smtc
-            .IsNextEnabled()
-            .expect("Failed to get SystemMediaTransportControls.IsNextEnabled");
+    fn is_next_enabled(&self) -> Result<bool, String> {
+        let get = self.smtc.IsNextEnabled();
+        if get.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.IsNextEnabled".to_string());
+        }
+
+        Ok(get.unwrap())
     }
 
-    pub fn set_is_next_enabled(&self, enabled: bool) {
-        self.smtc
-            .SetIsNextEnabled(enabled)
-            .expect("Failed to set SystemMediaTransportControls.SetIsNextEnabled");
+    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
+        let set = self.smtc.SetIsNextEnabled(enabled);
+        if set.is_err() {
+            return Err("Failed to set SystemMediaTransportControls.SetIsNextEnabled".to_string());
+        }
+
+        Ok(())
     }
     // endregion Buttons
 
     // region Media Information
-    pub fn get_media_type(&self) -> i32 {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        return du.Type().expect("Failed to get DisplayUpdater.Type").0;
+    fn get_media_type(&self) -> Result<i32, String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+
+        let du_type = du.Type();
+        if du_type.is_err() {
+            return Err("Failed to get DisplayUpdater.Type".to_string());
+        }
+        let du_type = du.Type().unwrap();
+
+        Ok(du_type.0)
     }
 
-    pub fn set_media_type(&self, media_type: i32) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
+    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
 
-        du.SetType(MediaPlaybackType::from(media_type))
-            .expect("Failed to get DisplayUpdater.Type");
+        du.SetType(MediaPlaybackType(media_type));
         du.Update();
+
+        Ok(())
     }
 
-    pub fn get_playback_status(&self) -> i32 {
-        return self
-            .smtc
-            .PlaybackStatus()
-            .expect("Failed to get SystemMediaTransportControls.PlaybackStatus")
-            .0;
+    fn get_playback_status(&self) -> Result<i32, String> {
+        let playback_status = self.smtc.PlaybackStatus();
+        if playback_status.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.PlaybackStatus".to_string());
+        }
+        let playback_status = playback_status.unwrap();
+
+        Ok(playback_status.0)
     }
 
-    pub fn set_playback_status(&self, status: i32) {
-        self.smtc
-            .SetPlaybackStatus(MediaPlaybackStatus::from(status))
-            .expect("Failed to set SystemMediaTransportControls.SetPlaybackStatus");
+    fn set_playback_status(&self, status: i32) -> Result<(), String> {
+        let set_result = self.smtc.SetPlaybackStatus(MediaPlaybackStatus(status));
+        if set_result.is_err() {
+            return Err("Failed to set SystemMediaTransportControls.SetPlaybackStatus".to_string());
+        }
+        Ok(())
     }
 
-    pub fn get_artist(&self) -> String {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn get_artist(&self) -> Result<String, String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        return mp
-            .Artist()
-            .expect("Failed to get MusicProperties.Artist")
-            .to_string();
+        let artist = mp.Artist();
+        if artist.is_err() {
+            return Err("Failed to get MusicProperties.Artist".to_string());
+        }
+        let artist = artist.unwrap();
+
+        Ok(artist.to_string())
     }
 
-    pub fn set_artist(&self, artist: String) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn set_artist(&self, artist: String) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        mp.SetArtist(artist);
+        mp.SetArtist(HSTRING::from(artist));
         du.Update();
+
+        Ok(())
     }
 
-    pub fn get_album_artist(&self) -> String {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn get_album_artist(&self) -> Result<String, String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        return mp
-            .AlbumArtist()
-            .expect("Failed to get MusicProperties.Artist")
-            .to_string();
+        let album_artist = mp.AlbumArtist();
+        if album_artist.is_err() {
+            return Err("Failed to get MusicProperties.Artist".to_string());
+        }
+        let album_artist = album_artist.unwrap();
+
+        Ok(album_artist.to_string())
     }
 
-    pub fn set_album_artist(&self, album_artist: String) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        mp.SetAlbumArtist(album_artist);
+        mp.SetAlbumArtist(HSTRING::from(album_artist));
         du.Update();
+
+        Ok(())
     }
 
-    pub fn get_album_title(&self) -> String {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn get_album_title(&self) -> Result<String, String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        return mp
-            .AlbumTitle()
-            .expect("Failed to get MusicProperties.Artist")
-            .to_string();
+        let album_title = mp.AlbumTitle();
+        if album_title.is_err() {
+            return Err("Failed to get MusicProperties.Artist".to_string());
+        }
+        let album_title = album_title.unwrap();
+
+        Ok(album_title.to_string())
     }
 
-    pub fn set_album_title(&self, album_title: String) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn set_album_title(&self, album_title: String) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        mp.SetAlbumTitle(album_title);
+        mp.SetAlbumTitle(HSTRING::from(album_title));
         du.Update();
+
+        Ok(())
     }
 
-    pub fn get_title(&self) -> String {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn get_title(&self) -> Result<String, String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        return mp
-            .Title()
-            .expect("Failed to get MusicProperties.Title")
-            .to_string();
+        let title = mp.Title();
+        if title.is_err() {
+            return Err("Failed to get MusicProperties.Title".to_string());
+        }
+        let title = title.unwrap();
+
+        Ok(title.to_string())
     }
 
-    pub fn set_title(&self, title: String) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let mp = du
-            .MusicProperties()
-            .expect("Failed to get DisplayUpdater.MusicProperties");
+    fn set_title(&self, title: String) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+        let mp = du.MusicProperties();
+        if mp.is_err() {
+            return Err("Failed to get DisplayUpdater.MusicProperties".to_string());
+        }
+        let mp = mp.unwrap();
 
-        mp.SetTitle(title);
+        mp.SetTitle(HSTRING::from(title));
         du.Update();
+
+        Ok(())
     }
 
-    pub fn get_track_id(&self) -> String {
-        return "".to_string();
+    fn get_track_id(&self) -> Result<String, String> {
+        return Ok("".to_string());
     }
 
-    pub fn set_track_id(&self, title: String) {}
+    fn set_track_id(&self, title: String) -> Result<(), String> {
+        Ok(())
+    }
 
-    pub fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) {
-        let du = self
-            .smtc
-            .DisplayUpdater()
-            .expect("Failed to get SystemMediaTransportControls.DisplayUpdater");
-        let stream = match thumbnail_type {
-            2 => RandomAccessStreamReference::CreateFromUri(
-                Uri::CreateUri(thumbnail).expect("Failed to create Foundation.Uri from thumbnail"),
-            ),
-            _ => panic!(),
+    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+        let du = self.smtc.DisplayUpdater();
+        if du.is_err() {
+            return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
+        }
+        let du = du.unwrap();
+
+        let stream: RandomAccessStreamReference = match thumbnail_type {
+            2 => {
+                let uri = Uri::CreateUri(HSTRING::from(thumbnail));
+                if uri.is_err() {
+                    return Err("Failed to create Foundation.Uri from thumbnail".to_string());
+                }
+                let uri = uri.unwrap();
+
+                let stream_ref = RandomAccessStreamReference::CreateFromUri(uri);
+                if stream_ref.is_err() {
+                    return Err(
+                        "Failed to create Streams.RandomAccessStreamReference from thumbnail"
+                            .to_string(),
+                    );
+                }
+
+                stream_ref.unwrap()
+            }
+            _ => {
+                return Err(format!(
+                    "Thumbnail type is not supported on this operating system: {}",
+                    thumbnail_type
+                ))
+            }
         };
-        du.SetThumbnail(
-            stream.expect("Failed to create Streams.RandomAccessStreamReference from thumbnail"),
-        );
+        du.SetThumbnail(stream);
         du.Update();
+
+        Ok(())
     }
     // endregion Media Information
 
     // region Events
-    pub fn set_button_pressed_callback(
+    fn set_button_pressed_callback(
         &mut self,
         callback: Root<JsFunction>,
         channel: Channel,
-    ) -> i64 {
+    ) -> Result<i64, String> {
         let callback_arc = std::sync::Arc::new(callback);
         let callback_eh_clone = callback_arc.clone();
         let channel_clone = channel.clone();
@@ -331,14 +440,20 @@ impl MediaService {
                     });
                 }
                 Ok(())
-            }))
-            .expect("Failed to bind native ButtonPressed callback");
+            }));
+
+        if token.is_err() {
+            return Err("Failed to bind native ButtonPressed callback".to_string());
+        }
+
+        let token = token.unwrap();
         self.active_buttons.push(token);
         self.active_channels.push(channel);
-        return token.Value;
+
+        Ok(token.Value)
     }
 
-    pub fn remove_button_presed_callback(&mut self) {
+    fn remove_button_pressed_callback(&mut self) -> Result<(), String> {
         for token in self.active_buttons.iter() {
             self.smtc.RemoveButtonPressed(token);
         }
@@ -346,6 +461,8 @@ impl MediaService {
         for channel in self.active_channels.iter() {
             drop(channel);
         }
+
+        Ok(())
     }
     // endregion Events
 }
