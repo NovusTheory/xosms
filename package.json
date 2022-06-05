@@ -12,7 +12,7 @@
         "cargo:test": "cargo test"
     },
     "name": "xosms",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
     "repository": {
         "type": "git",
