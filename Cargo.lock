@@ -154,9 +154,12 @@ dependencies = [
 
 [[package]]
 name = "fruity"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "273729867584f17b39ea7e3f0e14f8abbba2e2a856d674b8dbf8ded111cb788e"
+checksum = "241dbbe5b583199a3c5c3ac1cd8ca96d041c9aace368339646578ea56f4cd07d"
+dependencies = [
+ "malloced",
+]
 
 [[package]]
 name = "glob"
@@ -243,6 +246,12 @@ checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "malloced"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1f1986e0c53fe06cc6ae463b1c2bb325cf13ad4d4aeca9fe567a0dd974e04c9"
 
 [[package]]
 name = "memchr"
