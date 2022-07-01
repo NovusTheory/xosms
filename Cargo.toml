@@ -28,6 +28,6 @@ dbus-crossroads = "0.5.0"
 windows = { version = "0.37.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
 
 [dependencies.neon]
-version = "0.9"
+version = "0.10"
 default-features = false
 features = ["napi-6", "channel-api"]
