@@ -508,8 +508,8 @@ impl MprisPlayer {
                     let button_callback = state.button_callback.as_ref().unwrap();
                     let callback = button_callback.callback.to_inner(&mut cx);
                     let this = cx.undefined();
-                    let js_button = cx.string(button);
-                    callback.call(&mut cx, this, vec![js_button]);
+                    let args = [cx.string(button).upcast()];
+                    callback.call(&mut cx, this, args);
                 }
 
                 Ok(())

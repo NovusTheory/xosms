@@ -433,8 +433,8 @@ impl MediaServiceTrait for MediaService {
                             SystemMediaTransportControlsButton::ChannelDown => "channeldown",
                             _ => panic!()
                         };
-                        let js_button = cx.string(button);
-                        callback.call(&mut cx, this, vec![js_button]);
+                        let args = [cx.string(button).upcast()];
+                        callback.call(&mut cx, this, args);
 
                         Ok(())
                     });

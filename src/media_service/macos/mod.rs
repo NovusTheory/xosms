@@ -95,8 +95,8 @@ impl MediaService {
         channel.send(move |mut cx| {
             let callback = callback.to_inner(&mut cx);
             let this = cx.undefined();
-            let js_button = cx.string(button);
-            let _result = callback.call(&mut cx, this, vec![js_button]);
+            let args = [cx.string(button).upcast()];
+            let _result = callback.call(&mut cx, this, args);
             Ok(())
         });
     }
