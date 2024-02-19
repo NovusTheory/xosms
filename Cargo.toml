@@ -18,7 +18,7 @@ block = "0.1.6"
 fruity = { version = "0.2.0", features = ["foundation"] }
 
 [target.'cfg(target_os = "macos")'.build-dependencies]
-bindgen = "0.59.1"
+bindgen = "0.69.4"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 dbus = "0.9.5"
