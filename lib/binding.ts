@@ -1,4 +1,4 @@
-const native = require('../build/xosms-native');
+const native = require('../build/xosms-native.node');
 
 interface IMediaService
 {
