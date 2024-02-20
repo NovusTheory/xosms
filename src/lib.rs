@@ -1,7 +1,3 @@
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
-
 mod media_service;
 
 use media_service::service_trait::MediaServiceTrait;
@@ -38,7 +34,7 @@ fn media_service_is_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 
 fn media_service_set_is_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
     let enabled_result = service.set_is_enabled(enabled);
@@ -67,7 +63,7 @@ fn media_service_is_play_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean>
 
 fn media_service_set_is_play_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
     let play_enabled_result = service.set_is_play_enabled(enabled);
@@ -94,7 +90,7 @@ fn media_service_is_pause_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean
 
 fn media_service_set_is_pause_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
     let pause_enabled_result = service.set_is_pause_enabled(enabled);
@@ -121,7 +117,7 @@ fn media_service_is_previous_enabled(mut cx: FunctionContext) -> JsResult<JsBool
 
 fn media_service_set_is_previous_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
     let previous_enabled_result = service.set_is_previous_enabled(enabled);
@@ -148,7 +144,7 @@ fn media_service_is_next_enabled(mut cx: FunctionContext) -> JsResult<JsBoolean>
 
 fn media_service_set_is_next_enabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let enabled = cx.argument::<JsBoolean>(1)?.value(&mut cx);
     let next_enabled_result = service.set_is_next_enabled(enabled);
@@ -177,7 +173,7 @@ fn media_service_get_media_type(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
 fn media_service_set_media_type(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let media_type = cx.argument::<JsNumber>(1)?.value(&mut cx);
     let media_type_result = service.set_media_type(media_type as i32);
@@ -204,7 +200,7 @@ fn media_service_get_playback_status(mut cx: FunctionContext) -> JsResult<JsNumb
 
 fn media_service_set_playback_status(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let playback_status = cx.argument::<JsNumber>(1)?.value(&mut cx);
     let playback_status_result = service.set_playback_status(playback_status as i32);
@@ -231,7 +227,7 @@ fn media_service_get_artist(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn media_service_set_artist(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let artist = cx.argument::<JsString>(1)?.value(&mut cx);
     let artist_result = service.set_artist(artist);
@@ -258,7 +254,7 @@ fn media_service_get_album_artist(mut cx: FunctionContext) -> JsResult<JsString>
 
 fn media_service_set_album_artist(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let album_artist = cx.argument::<JsString>(1)?.value(&mut cx);
     let album_artist_result = service.set_album_artist(album_artist);
@@ -285,7 +281,7 @@ fn media_service_get_album_title(mut cx: FunctionContext) -> JsResult<JsString> 
 
 fn media_service_set_album_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let album_title = cx.argument::<JsString>(1)?.value(&mut cx);
     let album_title_result = service.set_album_title(album_title);
@@ -312,7 +308,7 @@ fn media_service_get_title(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn media_service_set_title(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let title = cx.argument::<JsString>(1)?.value(&mut cx);
     let title_result = service.set_title(title);
@@ -339,7 +335,7 @@ fn media_service_get_track_id(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn media_service_set_track_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let track_id = cx.argument::<JsString>(1)?.value(&mut cx);
     let track_id_result = service.set_track_id(track_id);
@@ -353,7 +349,7 @@ fn media_service_set_track_id(mut cx: FunctionContext) -> JsResult<JsUndefined> 
 
 fn media_service_set_thumbnail(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let service = cx.argument::<BoxedMediaService>(0)?;
-    let service = service.borrow_mut();
+    let mut service = service.borrow_mut();
 
     let thumbnail_type = cx.argument::<JsNumber>(1)?.value(&mut cx);
     let thumbnail = cx.argument::<JsString>(2)?.value(&mut cx);

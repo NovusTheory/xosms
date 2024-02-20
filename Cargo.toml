@@ -13,12 +13,10 @@ crate-type = ["cdylib"]
 [dependencies]
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc = "0.2.7"
-block = "0.1.6"
-fruity = { version = "0.2.0", features = ["foundation"] }
+swift-bridge = "0.1.52"
 
 [target.'cfg(target_os = "macos")'.build-dependencies]
-bindgen = "0.69.4"
+swift-bridge-build = "0.1.52"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 dbus = "0.9.5"
