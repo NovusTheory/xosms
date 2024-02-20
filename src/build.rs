@@ -1,47 +1,123 @@
+#[cfg(target_os = "macos")]
+use std::{path::PathBuf, process::Command};
+
 fn main() {
     println!("cargo:rerun-if-changed=src/build.rs");
     #[cfg(target_os = "macos")]
     {
-        let sdk_path_output = std::process::Command::new("xcrun")
-            .args(&["--sdk", "macosx", "--show-sdk-path"])
+        // 1. Use `swift-bridge-build` to generate Swift/C FFI glue.
+        //    You can also use the `swift-bridge` CLI.
+        println!("cargo:rerun-if-changed=src/media_service/macos/mod.rs");
+        let bridge_files = vec!["src/media_service/macos/mod.rs"];
+        swift_bridge_build::parse_bridges(bridge_files)
+            .write_all_concatenated(swift_bridge_out_dir(), "rust-calls-swift");
+
+        // 2. Compile Swift library
+        compile_swift();
+
+        // 3. Link to Swift library
+        println!("cargo:rustc-link-lib=static=xosms_swift_bridge");
+        println!(
+            "cargo:rustc-link-search={}",
+            swift_library_static_lib_dir().to_str().unwrap()
+        );
+
+        // Without this we will get warnings about not being able to find dynamic libraries, and then
+        // we won't be able to compile since the Swift static libraries depend on them:
+        // For example:
+        // ld: warning: Could not find or use auto-linked library 'swiftCompatibility51'
+        // ld: warning: Could not find or use auto-linked library 'swiftCompatibility50'
+        // ld: warning: Could not find or use auto-linked library 'swiftCompatibilityDynamicReplacements'
+        // ld: warning: Could not find or use auto-linked library 'swiftCompatibilityConcurrency'
+        let xcode_path = if let Ok(output) = std::process::Command::new("xcode-select")
+            .arg("--print-path")
             .output()
-            .expect("failed to get sdk path");
-        let sdk_path = String::from_utf8_lossy(&sdk_path_output.stdout).into_owned();
-
-        println!("cargo:rustc-link-lib=framework=MediaPlayer");
-        let builder = bindgen::Builder::default()
-            .rustfmt_bindings(true)
-            .header_contents(
-                "MediaPlayer.h",
-                "#include<MediaPlayer/MPNowPlayingInfoCenter.h>\n#include<MediaPlayer/MPRemoteCommandCenter.h>\n#include<MediaPlayer/MPMediaItem.h>\n#include<MediaPlayer/MPRemoteCommand.h>\n#include<MediaPlayer/MPRemoteCommandEvent.h>\n#import<MediaPlayer/AVFoundation+MPNowPlayingInfoLanguageOptionAdditions.h>",
-            )
-            .clang_args(&["-isysroot", sdk_path.trim()])
-            .block_extern_crate(false)
-            .generate_block(true)
-            .clang_args(&["-fblocks"])
-            .objc_extern_crate(false)
-            .clang_args(&["-x", "objective-c"])
-            .rustfmt_bindings(true)
-            .allowlist_recursively(true)
-            .allowlist_type(".*MP.*")
-            .allowlist_var(".*MP.*")
-            .allowlist_type(".*NSObject.*")
-            .allowlist_type(".*NSProxy.*")
-            .allowlist_type(".*NSValue.*")
-            .allowlist_type(".*NSOrderedSet.*")
-            .allowlist_type(".*NSString.*")
-            .allowlist_type(".*AV.*");
-        /*.blocklist_item("timezone")
-        .blocklist_item("objc_object")
-        .blocklist_item("HFSPlusCatalogFile")
-        .blocklist_item("HFSCatalogFile")
-        .blocklist_item("HFSCatalogFolder");*/
-
-        let bindings = builder.generate().expect("unable to generate bindings");
-
-        let out_dir = std::env::var_os("OUT_DIR").unwrap();
-        bindings
-            .write_to_file(std::path::Path::new(&out_dir).join("macos_bindings.rs"))
-            .expect("could not write bindings");
+        {
+            String::from_utf8(output.stdout.as_slice().into())
+                .unwrap()
+                .trim()
+                .to_string()
+        } else {
+            "/Applications/Xcode.app/Contents/Developer".to_string()
+        };
+        println!(
+            "cargo:rustc-link-search={}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/",
+            &xcode_path
+        );
+        println!("cargo:rustc-link-search={}", "/usr/lib/swift");
     }
+}
+
+#[cfg(target_os = "macos")]
+fn compile_swift() {
+    let swift_package_dir = manifest_dir().join("src/media_service/macos/xosms_swift_bridge");
+
+    let mut cmd = Command::new("swift");
+
+    cmd.current_dir(swift_package_dir)
+        .arg("build")
+        .args(&["-Xswiftc", "-static"])
+        .args(&[
+            "-Xswiftc",
+            "-import-objc-header",
+            "-Xswiftc",
+            swift_source_dir()
+                .join("bridging-header.h")
+                .to_str()
+                .unwrap(),
+        ]);
+
+    if is_release_build() {
+        cmd.args(&["-c", "release"]);
+    }
+
+    let exit_status = cmd.spawn().unwrap().wait_with_output().unwrap();
+
+    if !exit_status.status.success() {
+        panic!(
+            r#"
+Stderr: {}
+Stdout: {}
+"#,
+            String::from_utf8(exit_status.stderr).unwrap(),
+            String::from_utf8(exit_status.stdout).unwrap(),
+        )
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn swift_bridge_out_dir() -> PathBuf {
+    generated_code_dir()
+}
+
+#[cfg(target_os = "macos")]
+fn manifest_dir() -> PathBuf {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    PathBuf::from(manifest_dir)
+}
+
+#[cfg(target_os = "macos")]
+fn is_release_build() -> bool {
+    std::env::var("PROFILE").unwrap() == "release"
+}
+
+#[cfg(target_os = "macos")]
+fn swift_source_dir() -> PathBuf {
+    manifest_dir().join("src/media_service/macos/xosms_swift_bridge/Sources/xosms_swift_bridge")
+}
+
+#[cfg(target_os = "macos")]
+fn generated_code_dir() -> PathBuf {
+    swift_source_dir().join("generated")
+}
+
+#[cfg(target_os = "macos")]
+fn swift_library_static_lib_dir() -> PathBuf {
+    let debug_or_release = if is_release_build() {
+        "release"
+    } else {
+        "debug"
+    };
+
+    manifest_dir().join(format!("src/media_service/macos/xosms_swift_bridge/.build/{}", debug_or_release))
 }

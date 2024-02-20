@@ -1,89 +1,104 @@
-mod bindings;
-
-use block::ConcreteBlock;
-
-use bindings::*;
 use neon::event::Channel;
 use neon::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::media_service::service_trait::MediaServiceTrait;
 
-use fruity::foundation::NSString;
+static COMMAND_CALLBACK: Mutex<Option<RemoteCommandButtonCallback>> = Mutex::new(None);
 
-enum MPMediaItemProperty {
-    Artist,
-    Title,
-    AlbumArtist,
-    AlbumTitle,
-    TrackID,
+#[swift_bridge::bridge]
+mod ffi {
+    #[swift_bridge(swift_repr = "struct")]
+    struct NowPlayingInfo {
+        track_id: String,
+        media_type: usize,
+        title: String,
+        artist: String,
+        album_artist: String,
+        album_title: String,
+        artwork: String,
+        artwork_type: usize
+    }
+
+    extern "Rust" {
+        fn rust_remote_command_handler(command: &str);
+    }
+
+    extern "Swift" {
+        fn swift_configure_commands();
+
+        fn swift_set_playback_state(state: usize);
+        fn swift_set_info(info: NowPlayingInfo);
+        fn swift_set_remote_command_enabled(command: &str, enabled: bool);
+
+        fn swift_get_playback_state() -> usize;
+        fn swift_get_info() -> NowPlayingInfo;
+
+        fn swift_is_remote_command_enabled(command: &str) -> bool;
+    }
 }
 
-unsafe fn mpmedia_item_property_to_key(key: MPMediaItemProperty) -> id {
-    return match key {
-        MPMediaItemProperty::Artist => MPMediaItemPropertyArtist.0,
-        MPMediaItemProperty::Title => MPMediaItemPropertyTitle.0,
-        MPMediaItemProperty::AlbumArtist => MPMediaItemPropertyAlbumArtist.0,
-        MPMediaItemProperty::AlbumTitle => MPMediaItemPropertyAlbumTitle.0,
-        MPMediaItemProperty::TrackID => MPMediaItemPropertyPersistentID.0,
-    };
+fn rust_remote_command_handler(command: &str) {
+    let command_callback_option = COMMAND_CALLBACK.lock().unwrap();
+    match &*command_callback_option {
+        Some(command_callback) => {
+            let callback = command_callback.callback.clone();
+            let channel = command_callback.channel.clone();
+            match command {
+                "pause" => MediaService::send_button_pressed(callback, channel, "pause"),
+                "play" => MediaService::send_button_pressed(callback, channel, "play"),
+                "stop" => MediaService::send_button_pressed(callback, channel, "stop"),
+                "playpause" => MediaService::send_button_pressed(callback, channel, "playpause"),
+                "next" => MediaService::send_button_pressed(callback, channel, "next"),
+                "previous" => MediaService::send_button_pressed(callback, channel, "previous"),
+                _ => {}
+            }
+        }
+        None => {}
+    }
+}
+
+pub struct RemoteCommandButtonCallback {
+    callback: Arc<Root<JsFunction>>,
+    channel: Channel,
 }
 
 pub struct MediaService {
-    info_center: MPNowPlayingInfoCenter,
-    playing_info_dict: NSMutableDictionary,
-    remote_command_center: MPRemoteCommandCenter,
+    playing_info: ffi::NowPlayingInfo
 }
 
-unsafe impl Send for MediaService {} //TODO: Research deletion of that
 impl Finalize for MediaService {}
 
 impl MediaService {
     pub fn new(_service_name: String, _identity: String) -> Self {
-        let playing_info_dict: NSMutableDictionary;
-        let info_center: MPNowPlayingInfoCenter;
-        let remote_command_center: MPRemoteCommandCenter;
+        ffi::swift_configure_commands();
 
-        unsafe {
-            info_center = MPNowPlayingInfoCenter::defaultCenter();
-            remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-            info_center
-                .setPlaybackState_(MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped);
-
-            playing_info_dict = NSMutableDictionary(
-                bindings::INSMutableDictionary::<id, id>::init(&NSMutableDictionary::alloc()),
-            );
-            info_center.setNowPlayingInfo_(NSDictionary(playing_info_dict.0));
-        }
         Self {
-            info_center,
-            playing_info_dict,
-            remote_command_center,
+            playing_info: ffi::NowPlayingInfo { 
+                track_id: "".to_string(),
+                media_type: 0,
+                title: "".to_string(),
+                artist: "".to_string(),
+                album_artist: "".to_string(),
+                album_title: "".to_string(),
+                artwork: "".to_string(),
+                artwork_type: 0
+            }
         }
     }
 
-    fn set_metadata(&self, key: MPMediaItemProperty, value: String) {
-        unsafe {
-            let key = mpmedia_item_property_to_key(key);
-            let str = NSString::from(value.as_str());
-            let _result: objc::runtime::Object =
-                msg_send!(self.playing_info_dict, setObject : str forKey : key);
-            self.info_center
-                .setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-        }
-    }
-
-    fn get_metadata(&self, key: MPMediaItemProperty) -> String {
-        let value: Option<NSString>;
-        unsafe {
-            let key = mpmedia_item_property_to_key(key);
-            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: key);
-        }
-
-        match value {
-            Some(n) => return n.to_string(),
-            None => return "".to_string(),
-        }
+    fn update_info(&self) {
+        // TODO: Make this better
+        ffi::swift_set_info(ffi::NowPlayingInfo {
+            track_id: self.playing_info.track_id.clone(),
+            media_type: self.playing_info.media_type,
+            title: self.playing_info.title.clone(),
+            artist: self.playing_info.artist.clone(),
+            album_artist: self.playing_info.album_artist.clone(),
+            album_title: self.playing_info.album_title.clone(),
+            artwork: self.playing_info.artwork.clone(),
+            artwork_type: self.playing_info.artwork_type
+        });
     }
 
     fn send_button_pressed(
@@ -95,8 +110,8 @@ impl MediaService {
         channel.send(move |mut cx| {
             let callback = callback.to_inner(&mut cx);
             let this = cx.undefined();
-            let js_button = cx.string(button);
-            let _result = callback.call(&mut cx, this, vec![js_button]);
+            let args = [cx.string(button).upcast()];
+            let _result = callback.call(&mut cx, this, args);
             Ok(())
         });
     }
@@ -104,155 +119,126 @@ impl MediaService {
 
 impl MediaServiceTrait for MediaService {
     fn get_playback_status(&self) -> Result<i32, String> {
-        let value: Option<MPNowPlayingPlaybackState>;
-        unsafe {
-            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
-        }
-
-        let return_value = match value {
-            None => -1,
-            Some(n) => match n {
-                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying => 1,
-                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped => 2,
-                MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused => 4,
-                _ => -1,
-            },
+        let state = ffi::swift_get_playback_state();
+        let corrected_state = match state {
+            1 => 3, // Playing
+            2 => 4, // Paused
+            3 => 2, // Stopped
+            _ => -1,
         };
 
-        Ok(return_value)
+        Ok(corrected_state)
     }
 
-    fn set_playback_status(&self, status: i32) -> Result<(), String> {
+    fn set_playback_status(&mut self, status: i32) -> Result<(), String> {
         let state = match status {
-            1 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePlaying,
-            2 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateStopped,
-            3 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown, // There's no Changing status in MacOS so we maps this to Unknown
-            4 => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStatePaused,
-            _ => MPNowPlayingPlaybackState_MPNowPlayingPlaybackStateUnknown,
+            2 => 3, // Stopped
+            3 => 1, // Playing
+            4 => 2, // Paused
+            _ => 0,
         };
-
-        unsafe {
-            self.info_center.setPlaybackState_(state);
-        }
+        ffi::swift_set_playback_state(state);
 
         Ok(())
     }
 
     fn get_media_type(&self) -> Result<i32, String> {
-        let value: Option<MPNowPlayingPlaybackState>;
-        unsafe {
-            value = msg_send!(self.info_center.nowPlayingInfo().0, objectForKey: "playbackState");
-        }
-
-        let return_value = match value {
-            None => 0, // Return Unknown
-            Some(n) => {
-                match n {
-                    MPMediaType_MPMediaTypeMusic => 1,
-                    MPMediaType_MPMediaTypeAnyVideo => 2,
-                    _ => 0, // Return Unknown
-                }
-            }
+        let media_type = ffi::swift_get_info().media_type;
+        let corrected_media_type = match media_type {
+            1 => 1,
+            0xff00 => 2,
+            _ => 0
         };
 
-        Ok(return_value)
+        Ok(corrected_media_type)
     }
 
-    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
-        let state = match media_type {
-            1 => MPMediaType_MPMediaTypeMusic,
-            2 => MPMediaType_MPMediaTypeAnyVideo,
-            3 => MPMediaType_MPMediaTypeAny, // There's no separate type for Image in MacOS, so we maps it also to Any
-            _ => MPMediaType_MPMediaTypeAny,
+    fn set_media_type(&mut self, media_type: i32) -> Result<(), String> {
+        let state: usize = match media_type {
+            1 => 1,
+            2 => 0xff00,
+            _ => !0,
         };
 
-        unsafe {
-            self.info_center.setPlaybackState_(state);
-        }
+        self.playing_info.media_type = state;
+        self.update_info();
 
         Ok(())
     }
 
     fn get_artist(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::Artist))
+        Ok(ffi::swift_get_info().artist)
     }
 
-    fn set_artist(&self, artist: String) -> Result<(), String> {
-        self.set_metadata(MPMediaItemProperty::Artist, artist);
+    fn set_artist(&mut self, artist: String) -> Result<(), String> {
+        self.playing_info.artist = artist;
+        self.update_info();
 
         Ok(())
     }
 
     fn get_album_artist(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::AlbumArtist))
+        Ok(ffi::swift_get_info().album_artist)
     }
 
-    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
-        self.set_metadata(MPMediaItemProperty::AlbumArtist, album_artist);
+    fn set_album_artist(&mut self, album_artist: String) -> Result<(), String> {
+        self.playing_info.album_artist = album_artist;
+        self.update_info();
 
         Ok(())
     }
 
     fn get_album_title(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::AlbumTitle))
+        Ok(ffi::swift_get_info().album_title)
     }
 
-    fn set_album_title(&self, album_title: String) -> Result<(), String> {
-        self.set_metadata(MPMediaItemProperty::AlbumTitle, album_title);
+    fn set_album_title(&mut self, album_title: String) -> Result<(), String> {
+        self.playing_info.album_title = album_title;
+        self.update_info();
 
         Ok(())
     }
 
     fn get_title(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::Title))
+        Ok(ffi::swift_get_info().title)
     }
 
-    fn set_title(&self, title: String) -> Result<(), String> {
-        self.set_metadata(MPMediaItemProperty::Title, title);
+    fn set_title(&mut self, title: String) -> Result<(), String> {
+        self.playing_info.title = title;
+        self.update_info();
 
         Ok(())
     }
 
     fn get_track_id(&self) -> Result<String, String> {
-        Ok(self.get_metadata(MPMediaItemProperty::TrackID))
+        Ok("".to_string())
     }
 
-    fn set_track_id(&self, track_id: String) -> Result<(), String> {
-        self.set_metadata(MPMediaItemProperty::TrackID, track_id);
+    fn set_track_id(&mut self, track_id: String) -> Result<(), String> {
+        self.playing_info.track_id = track_id;
+        self.update_info();
 
         Ok(())
     }
 
-    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
-        unsafe {
-            let path: id =
-                msg_send![class!(NSURL), URLWithString: NSString::from(thumbnail.as_str())];
-            let img: NSImage;
-            match thumbnail_type {
-                1 => {
-                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfFile: path);
-                }
-                2 => {
-                    img = msg_send!(bindings::NSImage::alloc(), initWithContentsOfURL: path);
-                }
-                _ => {
-                    return Err(format!(
-                        "Thumbnail type is not supported on this operating system: {}",
-                        thumbnail_type
-                    ));
-                }
+    fn set_thumbnail(&mut self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+        match thumbnail_type {
+            1 => {
+                self.playing_info.artwork_type = 1;
+            },
+            2 => {
+                self.playing_info.artwork_type = 2;
+            },
+            _ => {
+                return Err(format!(
+                    "Thumbnail type is not supported on this operating system: {}",
+                    thumbnail_type
+                ));
             }
-            let size: bindings::NSSize = msg_send!(img, size);
-            let h = ConcreteBlock::new(move |_: CGSize| -> NSImage {
-                return img.clone();
-            });
-            let artwork: MPMediaItemArtwork = msg_send!(bindings::MPMediaItemArtwork::alloc(), initWithBoundsSize : size requestHandler : &*h);
-            let _result: objc::runtime::Object = msg_send!(self.playing_info_dict, setObject : artwork forKey : MPMediaItemPropertyArtwork.0);
-            self.info_center
-                .setNowPlayingInfo_(NSDictionary(self.playing_info_dict.0));
-
-            Ok(())
         }
+        self.playing_info.artwork = thumbnail;
+
+        Ok(())
     }
 
     fn set_button_pressed_callback(
@@ -260,7 +246,10 @@ impl MediaServiceTrait for MediaService {
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> Result<i64, String> {
-        unsafe {
+        let mut command_callback = COMMAND_CALLBACK.lock().unwrap();
+        *command_callback = Some(RemoteCommandButtonCallback { callback: Arc::new(callback), channel });
+
+        /*unsafe {
             let callback = std::sync::Arc::new(callback);
 
             let command_handler = ConcreteBlock::new(
@@ -316,7 +305,7 @@ impl MediaServiceTrait for MediaService {
             self.remote_command_center
                 .previousTrackCommand()
                 .addTargetWithHandler_(&*command_handler);
-        }
+        }*/
 
         Ok(-1)
     }
@@ -326,63 +315,41 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn is_play_enabled(&self) -> Result<bool, String> {
-        unsafe { Ok(self.remote_command_center.playCommand().isEnabled() != 0) }
+        Ok(ffi::swift_is_remote_command_enabled("play"))
     }
 
-    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
-        unsafe {
-            self.remote_command_center
-                .playCommand()
-                .setEnabled_(enabled as i8);
-        }
+    fn set_is_play_enabled(&mut self, enabled: bool) -> Result<(), String> {
+        ffi::swift_set_remote_command_enabled("play", enabled);
 
         Ok(())
     }
 
     fn is_pause_enabled(&self) -> Result<bool, String> {
-        unsafe { Ok(self.remote_command_center.pauseCommand().isEnabled() != 0) }
+        Ok(ffi::swift_is_remote_command_enabled("pause"))
     }
 
-    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
-        unsafe {
-            self.remote_command_center
-                .pauseCommand()
-                .setEnabled_(enabled as i8);
-        }
+    fn set_is_pause_enabled(&mut self, enabled: bool) -> Result<(), String> {
+        ffi::swift_set_remote_command_enabled("pause", enabled);
 
         Ok(())
     }
 
     fn is_previous_enabled(&self) -> Result<bool, String> {
-        unsafe {
-            Ok(self
-                .remote_command_center
-                .previousTrackCommand()
-                .isEnabled()
-                != 0)
-        }
+        Ok(ffi::swift_is_remote_command_enabled("previous"))
     }
 
-    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
-        unsafe {
-            self.remote_command_center
-                .previousTrackCommand()
-                .setEnabled_(enabled as i8);
-        }
+    fn set_is_previous_enabled(&mut self, enabled: bool) -> Result<(), String> {
+        ffi::swift_set_remote_command_enabled("previous", enabled);
 
         Ok(())
     }
 
     fn is_next_enabled(&self) -> Result<bool, String> {
-        unsafe { Ok(self.remote_command_center.nextTrackCommand().isEnabled() != 0) }
+        Ok(ffi::swift_is_remote_command_enabled("next"))
     }
 
-    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
-        unsafe {
-            self.remote_command_center
-                .nextTrackCommand()
-                .setEnabled_(enabled as i8);
-        }
+    fn set_is_next_enabled(&mut self, enabled: bool) -> Result<(), String> {
+        ffi::swift_set_remote_command_enabled("next", enabled);
 
         Ok(())
     }
@@ -391,7 +358,7 @@ impl MediaServiceTrait for MediaService {
         Ok(true)
     }
 
-    fn set_is_enabled(&self, _enabled: bool) -> Result<(), String> {
+    fn set_is_enabled(&mut self, _enabled: bool) -> Result<(), String> {
         Ok(())
     }
 }

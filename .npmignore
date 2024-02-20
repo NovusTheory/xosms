@@ -2,3 +2,5 @@
 .vscode
 target
 build
+.build
+generated

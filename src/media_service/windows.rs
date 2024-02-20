@@ -62,7 +62,7 @@ impl MediaServiceTrait for MediaService {
         Ok(get.unwrap())
     }
 
-    fn set_is_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_enabled(&mut self, enabled: bool) -> Result<(), String> {
         let set = self.smtc.SetIsEnabled(enabled);
         if set.is_err() {
             return Err("Failed to set SystemMediaTransportControls.SetIsEnabled".to_string());
@@ -82,7 +82,7 @@ impl MediaServiceTrait for MediaService {
         Ok(get.unwrap())
     }
 
-    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_play_enabled(&mut self, enabled: bool) -> Result<(), String> {
         let set = self.smtc.SetIsPlayEnabled(enabled);
         if set.is_err() {
             return Err("Failed to set SystemMediaTransportControls.SetIsPlayEnabled".to_string());
@@ -100,7 +100,7 @@ impl MediaServiceTrait for MediaService {
         Ok(get.unwrap())
     }
 
-    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_pause_enabled(&mut self, enabled: bool) -> Result<(), String> {
         let set = self.smtc.SetIsPauseEnabled(enabled);
         if set.is_err() {
             return Err("Failed to set SystemMediaTransportControls.SetIsPauseEnabled".to_string());
@@ -118,7 +118,7 @@ impl MediaServiceTrait for MediaService {
         Ok(get.unwrap())
     }
 
-    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_previous_enabled(&mut self, enabled: bool) -> Result<(), String> {
         let set = self.smtc.SetIsPreviousEnabled(enabled);
         if set.is_err() {
             return Err(
@@ -138,7 +138,7 @@ impl MediaServiceTrait for MediaService {
         Ok(get.unwrap())
     }
 
-    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_next_enabled(&mut self, enabled: bool) -> Result<(), String> {
         let set = self.smtc.SetIsNextEnabled(enabled);
         if set.is_err() {
             return Err("Failed to set SystemMediaTransportControls.SetIsNextEnabled".to_string());
@@ -165,7 +165,7 @@ impl MediaServiceTrait for MediaService {
         Ok(du_type.0)
     }
 
-    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
+    fn set_media_type(&mut self, media_type: i32) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -188,7 +188,7 @@ impl MediaServiceTrait for MediaService {
         Ok(playback_status.0)
     }
 
-    fn set_playback_status(&self, status: i32) -> Result<(), String> {
+    fn set_playback_status(&mut self, status: i32) -> Result<(), String> {
         let set_result = self.smtc.SetPlaybackStatus(MediaPlaybackStatus(status));
         if set_result.is_err() {
             return Err("Failed to set SystemMediaTransportControls.SetPlaybackStatus".to_string());
@@ -217,7 +217,7 @@ impl MediaServiceTrait for MediaService {
         Ok(artist.to_string())
     }
 
-    fn set_artist(&self, artist: String) -> Result<(), String> {
+    fn set_artist(&mut self, artist: String) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -256,7 +256,7 @@ impl MediaServiceTrait for MediaService {
         Ok(album_artist.to_string())
     }
 
-    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
+    fn set_album_artist(&mut self, album_artist: String) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -295,7 +295,7 @@ impl MediaServiceTrait for MediaService {
         Ok(album_title.to_string())
     }
 
-    fn set_album_title(&self, album_title: String) -> Result<(), String> {
+    fn set_album_title(&mut self, album_title: String) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -334,7 +334,7 @@ impl MediaServiceTrait for MediaService {
         Ok(title.to_string())
     }
 
-    fn set_title(&self, title: String) -> Result<(), String> {
+    fn set_title(&mut self, title: String) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -356,11 +356,11 @@ impl MediaServiceTrait for MediaService {
         return Ok("".to_string());
     }
 
-    fn set_track_id(&self, title: String) -> Result<(), String> {
+    fn set_track_id(&mut self, title: String) -> Result<(), String> {
         Ok(())
     }
 
-    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+    fn set_thumbnail(&mut self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
         let du = self.smtc.DisplayUpdater();
         if du.is_err() {
             return Err("Failed to get SystemMediaTransportControls.DisplayUpdater".to_string());
@@ -433,8 +433,8 @@ impl MediaServiceTrait for MediaService {
                             SystemMediaTransportControlsButton::ChannelDown => "channeldown",
                             _ => panic!()
                         };
-                        let js_button = cx.string(button);
-                        callback.call(&mut cx, this, vec![js_button]);
+                        let args = [cx.string(button).upcast()];
+                        callback.call(&mut cx, this, args);
 
                         Ok(())
                     });
