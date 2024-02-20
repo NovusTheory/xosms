@@ -366,7 +366,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().title.clone())
     }
 
-    fn set_title(&self, title: String) -> Result<(), String> {
+    fn set_title(&mut self, title: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:title".to_string(),
