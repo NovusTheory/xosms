@@ -1,3 +1,4 @@
+#[cfg(target_os = "macos")]
 use std::{path::PathBuf, process::Command};
 
 fn main() {
@@ -47,6 +48,7 @@ fn main() {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn compile_swift() {
     let swift_package_dir = manifest_dir().join("src/media_service/macos/xosms_swift_bridge");
 
@@ -83,27 +85,33 @@ Stdout: {}
     }
 }
 
+#[cfg(target_os = "macos")]
 fn swift_bridge_out_dir() -> PathBuf {
     generated_code_dir()
 }
 
+#[cfg(target_os = "macos")]
 fn manifest_dir() -> PathBuf {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     PathBuf::from(manifest_dir)
 }
 
+#[cfg(target_os = "macos")]
 fn is_release_build() -> bool {
     std::env::var("PROFILE").unwrap() == "release"
 }
 
+#[cfg(target_os = "macos")]
 fn swift_source_dir() -> PathBuf {
     manifest_dir().join("src/media_service/macos/xosms_swift_bridge/Sources/xosms_swift_bridge")
 }
 
+#[cfg(target_os = "macos")]
 fn generated_code_dir() -> PathBuf {
     swift_source_dir().join("generated")
 }
 
+#[cfg(target_os = "macos")]
 fn swift_library_static_lib_dir() -> PathBuf {
     let debug_or_release = if is_release_build() {
         "release"
