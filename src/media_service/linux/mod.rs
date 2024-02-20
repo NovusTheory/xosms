@@ -136,7 +136,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().can_control)
     }
 
-    fn set_is_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_enabled(&mut self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_control = enabled;
         }
@@ -158,7 +158,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().can_play)
     }
 
-    fn set_is_play_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_play_enabled(&mut self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_play = enabled;
         }
@@ -178,7 +178,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().can_pause)
     }
 
-    fn set_is_pause_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_pause_enabled(&mut self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_pause = enabled;
         }
@@ -198,7 +198,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().can_go_previous)
     }
 
-    fn set_is_previous_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_previous_enabled(&mut self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_go_previous = enabled;
         }
@@ -220,7 +220,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().can_go_next)
     }
 
-    fn set_is_next_enabled(&self, enabled: bool) -> Result<(), String> {
+    fn set_is_next_enabled(&mut self, enabled: bool) -> Result<(), String> {
         {
             self.state.write().unwrap().can_go_next = enabled;
         }
@@ -242,7 +242,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().media_type)
     }
 
-    fn set_media_type(&self, media_type: i32) -> Result<(), String> {
+    fn set_media_type(&mut self, media_type: i32) -> Result<(), String> {
         self.state.write().unwrap().media_type = media_type;
 
         Ok(())
@@ -252,7 +252,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().playback_status)
     }
 
-    fn set_playback_status(&self, status: i32) -> Result<(), String> {
+    fn set_playback_status(&mut self, status: i32) -> Result<(), String> {
         {
             self.state.write().unwrap().playback_status = status;
         }
@@ -282,7 +282,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().artist.clone())
     }
 
-    fn set_artist(&self, artist: String) -> Result<(), String> {
+    fn set_artist(&mut self, artist: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:artist".to_string(),
@@ -310,7 +310,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().album_artist.clone())
     }
 
-    fn set_album_artist(&self, album_artist: String) -> Result<(), String> {
+    fn set_album_artist(&mut self, album_artist: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:albumArtist".to_string(),
@@ -338,7 +338,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().album_title.clone())
     }
 
-    fn set_album_title(&self, album_title: String) -> Result<(), String> {
+    fn set_album_title(&mut self, album_title: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "xesam:album".to_string(),
@@ -394,7 +394,7 @@ impl MediaServiceTrait for MediaService {
         Ok(self.state.read().unwrap().track_id.clone())
     }
 
-    fn set_track_id(&self, track_id: String) -> Result<(), String> {
+    fn set_track_id(&mut self, track_id: String) -> Result<(), String> {
         {
             self.state.write().unwrap().metadata.insert(
                 "mpris:trackId".to_string(),
@@ -418,7 +418,7 @@ impl MediaServiceTrait for MediaService {
         Ok(())
     }
 
-    fn set_thumbnail(&self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
+    fn set_thumbnail(&mut self, thumbnail_type: i32, thumbnail: String) -> Result<(), String> {
         let art_url = match thumbnail_type {
             1 => thumbnail,
             2 => thumbnail,
