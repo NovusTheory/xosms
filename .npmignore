@@ -1,5 +1,6 @@
 .github
 .vscode
+.yarn
 target
 build
 .build
