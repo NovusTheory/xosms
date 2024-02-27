@@ -29,10 +29,16 @@ enum ThumbnailType {
 
 class MediaServiceProvider {
     private _nativeMediaService: IMediaService
-    private _callback: Function | null
+    private _buttonCallback: Function | null
+    private _positionChangeCallback: Function | null
+
+    //private _timelineStart = 0;
+    //private _timelineEnd = 0;
+    //private _timelinePosition = 0;
 
     constructor(serviceName: string, identity: string) {
-        this._callback = null;
+        this._buttonCallback = null;
+        this._positionChangeCallback = null;
         this._nativeMediaService = native.createMediaService(serviceName, identity);
     }
 
@@ -145,13 +151,38 @@ class MediaServiceProvider {
         native.mediaServiceSetThumbnail(this._nativeMediaService, type, thumbnail);
     }
 
+    // Timeline
+    public setTimeline(startTime: number, endTime: number, position: number) {
+        if (startTime > endTime) {
+            throw new Error("startTime cannot be greater than endTime");
+        }
+        if (endTime < startTime) {
+            throw new Error("endTime cannot be less than startTime");
+        }
+        if (position > endTime) {
+            throw new Error("position cannot be greater than endTime");
+        }
+        if (position < startTime) {
+            throw new Error("position cannot be less than startTime");
+        }
+        native.mediaServiceSetTimeline(this._nativeMediaService, startTime, endTime, position);
+    }
+
     // Events
     public set buttonPressed(callback: Function | null) {
-        if (this._callback != null) {
+        if (this._buttonCallback != null) {
             throw new Error("Xosms currently does not allow setting the button press callback multiple times or removing it.");
         }
-        this._callback = callback;
+        this._buttonCallback = callback;
         native.mediaServiceSetButtonCallback(this._nativeMediaService, callback)
+    }
+
+    public set positionChanged(callback: Function | null) {
+        if (this._positionChangeCallback != null) {
+            throw new Error("Xosms currently does not allow setting the position changed callback multiple times or removing it.");
+        }
+        this._positionChangeCallback = callback;
+        native.mediaServiceSetPositionChangeCallback(this._nativeMediaService, callback)
     }
 }
 

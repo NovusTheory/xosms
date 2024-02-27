@@ -58,6 +58,10 @@ pub trait MediaServiceTrait: Send {
     fn set_thumbnail(&mut self, thumbnail_type: i32, thumbnail: String) -> Result<(), String>;
     // endregion Media Information
 
+    // region Media Timeline
+    fn set_timeline(&mut self, start_time: u64, end_time: u64, position: u64, min_seek_time: u64, max_seek_time: u64) -> Result<(), String>;
+    // endregion Media Timeline
+
     // region Events
     fn set_button_pressed_callback(
         &mut self,
@@ -66,5 +70,13 @@ pub trait MediaServiceTrait: Send {
     ) -> Result<i64, String>;
 
     fn remove_button_pressed_callback(&mut self) -> Result<(), String>;
+
+    fn set_playback_position_change_callback(
+        &mut self,
+        callback: Root<JsFunction>,
+        channel: Channel,
+    ) -> Result<i64, String>;
+
+    fn remove_playback_position_change_callback(&mut self) -> Result<(), String>;
     // endregion Events
 }

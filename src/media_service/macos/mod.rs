@@ -361,4 +361,20 @@ impl MediaServiceTrait for MediaService {
     fn set_is_enabled(&mut self, _enabled: bool) -> Result<(), String> {
         Ok(())
     }
+
+    fn set_timeline(&mut self, start_time: u64, end_time: u64, position: u64, min_seek_time: u64, max_seek_time: u64) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn set_playback_position_change_callback(
+        &mut self,
+        callback: Root<JsFunction>,
+        channel: Channel,
+    ) -> Result<i64, String> {
+        Ok(-1);
+    }
+
+    fn remove_playback_position_change_callback(&mut self) -> Result<(), String> {
+        Ok(())
+    }
 }

@@ -61,11 +61,19 @@ async function ensureCanModifyMediaServiceProviderProperties() {
     instance.trackId = "TEST";
     console.log("TrackId:", instance.trackId);
     instance.setThumbnail(Xosms.ThumbnailType.Uri, "https://via.placeholder.com/128")
+    instance.setTimeline(0, 60, 30);
     // Ensures button event attachment works
     console.log("Adding button press callback");
     instance.buttonPressed = (button) => {
         console.log("Pressed button", button)
     };
+    console.log("Added button press callback");
+    console.log("Adding position changed callback");
+    instance.positionChanged = (position) => {
+        console.log("Position changed", position)
+    };
+    console.log("Adding position changed callback");
+    await new Promise(resolve => setTimeout(resolve, 10 * 1000));
 }
 
 assert.doesNotThrow(ensureMediaServiceProviderIsCreated, undefined, "ensureMediaServiceProviderIsCreated threw an error")
