@@ -34,6 +34,8 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v2
+      - name: Corepack Enable Yarn
+        run: corepack enable yarn
       - uses: actions/setup-node@v2
         with:
           node-version: 14
