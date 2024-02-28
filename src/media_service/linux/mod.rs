@@ -477,7 +477,7 @@ impl MediaServiceTrait for MediaService {
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> Result<i64, String> {
-        Ok(-1);
+        Ok(-1)
     }
 
     fn remove_playback_position_change_callback(&mut self) -> Result<(), String> {
