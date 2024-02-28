@@ -41,6 +41,12 @@ public func swift_configure_commands() {
         rust_remote_command_handler("previous")
         return .success
     }
+
+    remoteCommandCenter.changePlaybackPositionCommand.addTarget { event in
+        let positionCommandEvent = event as! MPChangePlaybackPositionCommandEvent
+        rust_change_playback_position_handler(positionCommandEvent.positionTime)
+        return .success
+    }
 }
 
 public func swift_set_playback_state(state: UInt) {
@@ -71,6 +77,8 @@ public func swift_set_info(info: NowPlayingInfo) {
     }
     nowPlayingInfo[MPMediaItemPropertyAlbumArtist] = info.album_artist.toString()
     nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = info.album_title.toString()
+    nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = info.duration
+    nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = info.progress
 
     nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
 }
@@ -103,10 +111,18 @@ public func swift_get_info() -> NowPlayingInfo {
         if (nowPlayingInfo!.index(forKey: MPMediaItemPropertyAlbumTitle) != nil) {
             albumTitle = nowPlayingInfo![MPMediaItemPropertyAlbumTitle] as! String
         }
+        var duration: Double = 0;
+        if (nowPlayingInfo!.index(forKey: MPMediaItemPropertyPlaybackDuration) != nil) {
+            duration = nowPlayingInfo![MPMediaItemPropertyPlaybackDuration] as! Double
+        }
+        var progress: Double = 0;
+        if (nowPlayingInfo!.index(forKey: MPNowPlayingInfoPropertyElapsedPlaybackTime) != nil) {
+            progress = nowPlayingInfo![MPNowPlayingInfoPropertyElapsedPlaybackTime] as! Double
+        }
 
-        return NowPlayingInfo(track_id: "".intoRustString(), media_type: mediaType.rawValue, title: title.intoRustString(), artist: artist.intoRustString(), album_artist: albumArtist.intoRustString(), album_title: albumTitle.intoRustString(), artwork: "".intoRustString(), artwork_type: 0)
+        return NowPlayingInfo(track_id: "".intoRustString(), media_type: mediaType.rawValue, title: title.intoRustString(), artist: artist.intoRustString(), album_artist: albumArtist.intoRustString(), album_title: albumTitle.intoRustString(), artwork: "".intoRustString(), artwork_type: 0, duration: duration, progress: progress)
     } else {
-        return NowPlayingInfo(track_id: "".intoRustString(), media_type: 0, title: "".intoRustString(), artist: "".intoRustString(), album_artist: "".intoRustString(), album_title: "".intoRustString(), artwork: "".intoRustString(), artwork_type: 0)
+        return NowPlayingInfo(track_id: "".intoRustString(), media_type: 0, title: "".intoRustString(), artist: "".intoRustString(), album_artist: "".intoRustString(), album_title: "".intoRustString(), artwork: "".intoRustString(), artwork_type: 0, duration: 0, progress: 0)
     }
 }
 

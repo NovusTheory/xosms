@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::media_service::service_trait::MediaServiceTrait;
 
 static COMMAND_CALLBACK: Mutex<Option<RemoteCommandButtonCallback>> = Mutex::new(None);
+static PLAYBACK_POSITION_CALLBACK: Mutex<Option<PlaybackPositionButtonCallback>> = Mutex::new(None);
 
 #[swift_bridge::bridge]
 mod ffi {
@@ -17,11 +18,14 @@ mod ffi {
         album_artist: String,
         album_title: String,
         artwork: String,
-        artwork_type: usize
+        artwork_type: usize,
+        duration: f64,
+        progress: f64
     }
 
     extern "Rust" {
         fn rust_remote_command_handler(command: &str);
+        fn rust_change_playback_position_handler(position: f64);
     }
 
     extern "Swift" {
@@ -58,7 +62,24 @@ fn rust_remote_command_handler(command: &str) {
     }
 }
 
+fn rust_change_playback_position_handler(position: f64) {
+    let playback_position_callback_option = PLAYBACK_POSITION_CALLBACK.lock().unwrap();
+    match &*playback_position_callback_option {
+        Some(playback_position_callback) => {
+            let callback = playback_position_callback.callback.clone();
+            let channel = playback_position_callback.channel.clone();
+            MediaService::send_playback_position_changed(callback, channel, position);
+        }
+        None => {}
+    }
+}
+
 pub struct RemoteCommandButtonCallback {
+    callback: Arc<Root<JsFunction>>,
+    channel: Channel,
+}
+
+pub struct PlaybackPositionButtonCallback {
     callback: Arc<Root<JsFunction>>,
     channel: Channel,
 }
@@ -82,7 +103,9 @@ impl MediaService {
                 album_artist: "".to_string(),
                 album_title: "".to_string(),
                 artwork: "".to_string(),
-                artwork_type: 0
+                artwork_type: 0,
+                duration: 0.0,
+                progress: 0.0,
             }
         }
     }
@@ -97,7 +120,9 @@ impl MediaService {
             album_artist: self.playing_info.album_artist.clone(),
             album_title: self.playing_info.album_title.clone(),
             artwork: self.playing_info.artwork.clone(),
-            artwork_type: self.playing_info.artwork_type
+            artwork_type: self.playing_info.artwork_type,
+            duration: self.playing_info.duration,
+            progress: self.playing_info.progress
         });
     }
 
@@ -111,6 +136,21 @@ impl MediaService {
             let callback = callback.to_inner(&mut cx);
             let this = cx.undefined();
             let args = [cx.string(button).upcast()];
+            let _result = callback.call(&mut cx, this, args);
+            Ok(())
+        });
+    }
+
+    fn send_playback_position_changed(
+        callback: Arc<Root<JsFunction>>,
+        channel: Channel,
+        position: f64,
+    ) {
+        let channel = channel.clone();
+        channel.send(move |mut cx| {
+            let callback = callback.to_inner(&mut cx);
+            let this = cx.undefined();
+            let args = [cx.number(position).upcast()];
             let _result = callback.call(&mut cx, this, args);
             Ok(())
         });
@@ -249,64 +289,6 @@ impl MediaServiceTrait for MediaService {
         let mut command_callback = COMMAND_CALLBACK.lock().unwrap();
         *command_callback = Some(RemoteCommandButtonCallback { callback: Arc::new(callback), channel });
 
-        /*unsafe {
-            let callback = std::sync::Arc::new(callback);
-
-            let command_handler = ConcreteBlock::new(
-                move |e: MPRemoteCommandEvent| -> MPRemoteCommandHandlerStatus {
-                    let command: MPRemoteCommand = msg_send!(e, command);
-                    let remote_command_center = MPRemoteCommandCenter::sharedCommandCenter();
-                    let callback = callback.clone();
-                    let channel = channel.clone();
-
-                    if command.0 == remote_command_center.playCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "play");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    if command.0 == remote_command_center.pauseCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "pause");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    if command.0 == remote_command_center.togglePlayPauseCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "playpause");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    if command.0 == remote_command_center.stopCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "stop");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    if command.0 == remote_command_center.nextTrackCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "next");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    if command.0 == remote_command_center.previousTrackCommand().0 {
-                        MediaService::send_button_pressed(callback, channel, "previous");
-                        return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusSuccess;
-                    }
-                    return MPRemoteCommandHandlerStatus_MPRemoteCommandHandlerStatusCommandFailed;
-                },
-            );
-            let command_handler = command_handler.copy();
-            self.remote_command_center
-                .playCommand()
-                .addTargetWithHandler_(&*command_handler);
-            self.remote_command_center
-                .pauseCommand()
-                .addTargetWithHandler_(&*command_handler);
-            self.remote_command_center
-                .togglePlayPauseCommand()
-                .addTargetWithHandler_(&*command_handler);
-            self.remote_command_center
-                .stopCommand()
-                .addTargetWithHandler_(&*command_handler);
-            self.remote_command_center
-                .nextTrackCommand()
-                .addTargetWithHandler_(&*command_handler);
-            self.remote_command_center
-                .previousTrackCommand()
-                .addTargetWithHandler_(&*command_handler);
-        }*/
-
         Ok(-1)
     }
 
@@ -363,6 +345,10 @@ impl MediaServiceTrait for MediaService {
     }
 
     fn set_timeline(&mut self, start_time: u64, end_time: u64, position: u64, min_seek_time: u64, max_seek_time: u64) -> Result<(), String> {
+        self.playing_info.duration = end_time as f64;
+        self.playing_info.progress = position as f64;
+        self.update_info();
+
         Ok(())
     }
 
@@ -371,7 +357,10 @@ impl MediaServiceTrait for MediaService {
         callback: Root<JsFunction>,
         channel: Channel,
     ) -> Result<i64, String> {
-        Ok(-1);
+        let mut playback_position_callback = PLAYBACK_POSITION_CALLBACK.lock().unwrap();
+        *playback_position_callback = Some(PlaybackPositionButtonCallback { callback: Arc::new(callback), channel });
+
+        Ok(-1)
     }
 
     fn remove_playback_position_change_callback(&mut self) -> Result<(), String> {
