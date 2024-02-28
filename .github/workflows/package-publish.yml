@@ -42,7 +42,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: Install libdbus
         run: sudo apt-get install libdbus-1-dev pkg-config -y
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --immutable
       - run: yarn build
       - run: yarn build:lib
       - run: yarn publish

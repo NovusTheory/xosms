@@ -28,7 +28,7 @@ jobs:
     - name: Install libdbus
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt-get install libdbus-1-dev pkg-config -y 
-    - run: yarn install --frozen-lockfile
+    - run: yarn install --immutable
     - run: yarn build
     - run: yarn build:lib
     - name: Library Test
