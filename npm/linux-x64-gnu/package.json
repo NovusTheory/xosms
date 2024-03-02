@@ -1,0 +1,23 @@
+{
+  "name": "@xosms/xosms-linux-x64-gnu",
+  "version": "0.4.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "xosms.linux-x64-gnu.node",
+  "files": [
+    "xosms.linux-x64-gnu.node"
+  ],
+  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 10"
+  },
+  "repository": "https://github.com/NovusTheory/xosms",
+  "libc": [
+    "glibc"
+  ]
+}

@@ -1,31 +1,23 @@
 [package]
+edition = "2021"
 name = "xosms"
-version = "0.3.1"
-edition = "2018"
-exclude = ["build/xosms-native.node"]
-build = "src/build.rs"
+version = "0.0.0"
 
 [lib]
 crate-type = ["cdylib"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+napi = { version = "2.12.2", default-features = false, features = ["napi9", "tokio_rt"] }
+napi-derive = "2.12.2"
 
-[target.'cfg(target_os = "macos")'.dependencies]
-swift-bridge = "0.1.52"
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.54.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
+dashmap = "5.5.3"
 
-[target.'cfg(target_os = "macos")'.build-dependencies]
-swift-bridge-build = "0.1.52"
+[build-dependencies]
+napi-build = "2.0.1"
 
-[target.'cfg(target_os = "linux")'.dependencies]
-dbus = "0.9.5"
-dbus-crossroads = "0.5.0"
-
-[target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.37.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
-
-[dependencies.neon]
-version = "0.10.1"
-default-features = false
-features = ["napi-6", "channel-api"]
+[profile.release]
+lto = true
+strip = "symbols"

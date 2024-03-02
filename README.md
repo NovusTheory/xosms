@@ -1,10 +1,14 @@
-# Xosms [![Build & Test](https://github.com/NovusTheory/xosms/actions/workflows/build-test.yml/badge.svg?branch=dev)](https://github.com/NovusTheory/xosms/actions/workflows/build-test.yml) [![npm version](https://badge.fury.io/js/xosms.svg)](https://badge.fury.io/js/xosms)
+# Xosms [![build](https://github.com/NovusTheory/xosms/actions/workflows/CI.yml/badge.svg?branch=dev)](https://github.com/NovusTheory/xosms/actions/workflows/CI.yml) [![npm version](https://badge.fury.io/js/xosms.svg)](https://badge.fury.io/js/xosms)
 A cross platform media service library made in Rust for Node to easily and seamelessly integrate with the operating systems media service API.
+
+
+> [!WARNING]  
+> Xosms is going under a rewrite and current platforms that were previously supported may no longer be supported. This rewrite is to help more concretely define and stabilize the API along with improving the development workflow.
 
 ## Current Platforms Supported
 - [x] Windows
-- [x] MacOS
-- [x] Linux (via MPRIS)
+- [ ] MacOS
+- [ ] Linux (via MPRIS)
 
 Even if your platform above isn't currently supported, the beauty of xosms is that it will still compile for it but noop on everything.
 

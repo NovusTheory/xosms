@@ -1,0 +1,20 @@
+{
+  "name": "@xosms/xosms-darwin-x64",
+  "version": "0.4.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "xosms.darwin-x64.node",
+  "files": [
+    "xosms.darwin-x64.node"
+  ],
+  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 10"
+  },
+  "repository": "https://github.com/NovusTheory/xosms"
+}
