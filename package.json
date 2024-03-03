@@ -12,6 +12,9 @@
         "aarch64-pc-windows-msvc",
         "universal-apple-darwin"
       ]
+    },
+    "package": {
+      "name": "@xosms/xosms"
     }
   },
   "license": "Apache-2.0",
