@@ -173,8 +173,16 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
+      - name: Setup and run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: node:${{ matrix.node }}-slim
+          options: '-v ${{ github.workspace }}:/build -w /build'
+          run: |
+            apt-get update
+            apt-get install dbus-daemon -y
+            export DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --fork --print-address | cut -d, -f1)
+            yarn test
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
@@ -213,6 +221,9 @@ jobs:
           options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
           run: |
             set -e
+            apt-get update
+            apt-get install dbus-daemon -y
+            export DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --fork --print-address | cut -d, -f1)
             yarn test
             ls -la
   universal-macOS:
