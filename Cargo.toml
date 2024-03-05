@@ -16,7 +16,7 @@ windows = { version = "0.54.0", features = ["Foundation", "Media", "Media_Playba
 dashmap = "5.5.3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-dbus = "0.9.7"
+dbus = { version = "0.9.7", features = ["vendored"] }
 dbus-crossroads = "0.5.2"
 dashmap = "5.5.3"
 float_duration = { version = "0.3.3", default-features = false }
