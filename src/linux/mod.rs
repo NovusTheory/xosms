@@ -804,7 +804,11 @@ impl MediaPlayer {
       metadata.insert(
         "mpris:length".to_string(),
         Variant(Box::new(
-          FloatDuration::seconds(state.duration).as_microseconds(),
+          FloatDuration::seconds(state.position)
+            .as_microseconds()
+            .max(i64::MIN as f64)
+            .min(i64::MAX as f64)
+            .round() as i64,
         )),
       );
       metadata.insert(
@@ -1130,7 +1134,11 @@ impl OrgMprisMediaPlayer2Player for MprisPlayer {
       metadata.insert(
         "mpris:length".to_string(),
         Variant(Box::new(
-          FloatDuration::seconds(state.duration).as_microseconds(),
+          FloatDuration::seconds(state.duration)
+            .as_microseconds()
+            .max(i64::MIN as f64)
+            .min(i64::MAX as f64)
+            .round() as i64,
         )),
       );
       metadata.insert(
