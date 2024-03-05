@@ -302,12 +302,16 @@ impl MediaPlayer {
   }
 
   /// Adds an event listener to the MediaPlayer
+  ///
+  /// 'buttonpressed' - Emitted when a media services button is pressed
+  /// 'positionchanged' - Emitted when the media service requests a position change
+  /// 'positionseeked' - Emitted when the media service requests a forward or backward position seek from current position
   #[napi]
   #[allow(dead_code)]
   pub fn add_event_listener(
     &mut self,
     env: Env,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] event_name: String,
     callback: JsFunction,
   ) -> napi::Result<()> {
     let callback_ptr = unsafe { callback.raw() as usize };
@@ -349,7 +353,7 @@ impl MediaPlayer {
   #[allow(dead_code)]
   pub fn remove_event_listener(
     &mut self,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] event_name: String,
     callback: JsFunction,
   ) -> napi::Result<()> {
     let callback_ptr = unsafe { callback.raw() as usize };
@@ -384,7 +388,7 @@ impl MediaPlayer {
   pub fn on(
     &mut self,
     env: Env,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] event_name: String,
     callback: JsFunction,
   ) -> napi::Result<()> {
     self.add_event_listener(env, event_name, callback)
@@ -397,7 +401,7 @@ impl MediaPlayer {
   #[allow(dead_code)]
   pub fn off(
     &mut self,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] event_name: String,
     callback: JsFunction,
   ) -> napi::Result<()> {
     self.remove_event_listener(event_name, callback)
@@ -448,6 +452,8 @@ impl MediaPlayer {
   }
 
   /// Sets the timeline data
+  ///
+  /// You MUST call this function everytime the position changes in the song. The media service will become out of sync if this is not called enough or cause seeked signals to be emitted to the media service unnecessarily.
   #[napi]
   #[allow(dead_code)]
   pub fn set_timeline(&mut self, duration: f64, position: f64) -> napi::Result<()> {
@@ -678,7 +684,21 @@ impl MediaPlayer {
     }
   }
 
-  /// Gets the next button enbled state
+  /// Gets the seek enabled state
+  #[napi(getter)]
+  #[allow(dead_code)]
+  pub fn get_seek_enabled(&self) -> napi::Result<bool> {
+    Ok(true)
+  }
+
+  /// Sets the seek enabled state
+  #[napi(setter)]
+  #[allow(dead_code)]
+  pub fn set_seek_enabled(&mut self, _enabled: bool) -> napi::Result<()> {
+    Ok(())
+  }
+
+  /// Gets the playback rate
   #[napi(getter)]
   #[allow(dead_code)]
   pub fn get_playback_rate(&self) -> napi::Result<f64> {
@@ -979,6 +999,20 @@ impl MediaPlayer {
       }
       Err(error) => Err(napi::Error::from_reason(error.message())),
     }
+  }
+
+  /// Gets the track id
+  #[napi(getter)]
+  #[allow(dead_code)]
+  pub fn get_track_id(&self) -> napi::Result<String> {
+    Ok("".to_string())
+  }
+
+  /// Sets the track id
+  #[napi(setter)]
+  #[allow(dead_code)]
+  pub fn set_track_id(&mut self, track_id: String) -> napi::Result<()> {
+    Ok(())
   }
 }
 

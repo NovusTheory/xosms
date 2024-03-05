@@ -152,6 +152,8 @@ impl MediaPlayer {
   }
 
   /// Sets the timeline data
+  ///
+  /// You MUST call this function everytime the position changes in the song. The media service will become out of sync if this is not called enough or cause seeked signals to be emitted to the media service unnecessarily.
   #[napi]
   #[allow(dead_code)]
   pub fn set_timeline(&mut self, duration: f64, position: f64) -> napi::Result<()> {
@@ -240,14 +242,14 @@ impl MediaPlayer {
     Ok(())
   }
 
-  /// Gets the seek enbled state
+  /// Gets the seek enabled state
   #[napi(getter)]
   #[allow(dead_code)]
   pub fn get_seek_enabled(&self) -> napi::Result<bool> {
     Ok(false)
   }
 
-  /// Sets the seek enbled state
+  /// Sets the seek enabled state
   #[napi(setter)]
   #[allow(dead_code)]
   pub fn set_seek_enabled(&mut self, _enabled: bool) -> napi::Result<()> {

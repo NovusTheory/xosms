@@ -82,7 +82,7 @@ export class MediaPlayer {
   set nextButtonEnabled(enabled: boolean)
   /** Gets the seek enabled state */
   get seekEnabled(): boolean
-  /** Sets the seek enbled state */
+  /** Sets the seek enabled state */
   set seekEnabled(enabled: boolean)
   /** Gets the playback rate */
   get playbackRate(): number
