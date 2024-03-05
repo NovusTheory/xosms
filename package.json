@@ -39,5 +39,14 @@
   },
   "packageManager": "yarn@4.1.0",
   "repository": "https://github.com/NovusTheory/xosms",
-  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it."
+  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
+  "keywords": [
+    "electron",
+    "media",
+    "service",
+    "media service",
+    "cross",
+    "platform",
+    "cross platform"
+  ]
 }
