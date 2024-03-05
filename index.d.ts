@@ -28,27 +28,37 @@ export class MediaPlayer {
   activate(): void
   /** Deactivates the MediaPlayer denying the operating system to see and use it */
   deactivate(): void
-  /** Adds an event listener to the MediaPlayer */
-  addEventListener(eventName: 'buttonpressed' | 'positionchanged', callback: (...args: any[]) => any): void
+  /**
+   * Adds an event listener to the MediaPlayer
+   *
+   * 'buttonpressed' - Emitted when a media services button is pressed
+   * 'positionchanged' - Emitted when the media service requests a position change
+   * 'positionseeked' - Emitted when the media service requests a forward or backward position seek from current position
+   */
+  addEventListener(eventName: 'buttonpressed' | 'positionchanged' | 'positionseeked', callback: (...args: any[]) => any): void
   /** Removes an event listener from the MediaPlayer */
-  removeEventListener(eventName: 'buttonpressed' | 'positionchanged', callback: (...args: any[]) => any): void
+  removeEventListener(eventName: 'buttonpressed' | 'positionchanged' | 'positionseeked', callback: (...args: any[]) => any): void
   /**
    * Adds an event listener to the MediaPlayer
    *
    * Alias for addEventListener
    */
-  on(eventName: 'buttonpressed' | 'positionchanged', callback: (...args: any[]) => any): void
+  on(eventName: 'buttonpressed' | 'positionchanged' | 'positionseeked', callback: (...args: any[]) => any): void
   /**
    * Removes an event listener from the MediaPlayer
    *
    * Alias for removeEventListener
    */
-  off(eventName: 'buttonpressed' | 'positionchanged', callback: (...args: any[]) => any): void
+  off(eventName: 'buttonpressed' | 'positionchanged' | 'positionseeked', callback: (...args: any[]) => any): void
   /** Instructs the media service to update its media information being displayed */
   update(): void
   /** Sets the thumbnail */
   setThumbnail(thumbnail: MediaPlayerThumbnail): void
-  /** Sets the timeline data */
+  /**
+   * Sets the timeline data
+   *
+   * You MUST call this function everytime the position changes in the song. The media service will become out of sync if this is not called enough or cause seeked signals to be emitted to the media service unnecessarily.
+   */
   setTimeline(duration: number, position: number): void
   /** Gets the play button enbled state */
   get playButtonEnabled(): boolean
@@ -70,7 +80,11 @@ export class MediaPlayer {
   get nextButtonEnabled(): boolean
   /** Sets the next button enbled state */
   set nextButtonEnabled(enabled: boolean)
-  /** Gets the next button enbled state */
+  /** Gets the seek enabled state */
+  get seekEnabled(): boolean
+  /** Sets the seek enbled state */
+  set seekEnabled(enabled: boolean)
+  /** Gets the playback rate */
   get playbackRate(): number
   /** Sets the playback rate */
   set playbackRate(playbackRate: number)
@@ -94,4 +108,8 @@ export class MediaPlayer {
   get albumTitle(): string
   /** Sets the media artist */
   set albumTitle(albumTitle: string)
+  /** Gets the track id */
+  get trackId(): string
+  /** Sets the track id */
+  set trackId(trackId: string)
 }

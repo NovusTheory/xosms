@@ -8,12 +8,19 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.12.2", default-features = false, features = ["napi9", "tokio_rt"] }
+napi = { version = "2.12.2", default-features = false, features = ["napi9", "async"] }
 napi-derive = "2.12.2"
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.54.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
 dashmap = "5.5.3"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+dbus = "0.9.7"
+dbus-crossroads = "0.5.2"
+dashmap = "5.5.3"
+float_duration = { version = "0.3.3", default-features = false }
+oneshot = "0.1.6"
 
 [build-dependencies]
 napi-build = "2.0.1"

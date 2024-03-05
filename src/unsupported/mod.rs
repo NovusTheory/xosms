@@ -83,13 +83,24 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Disposes any native resources allocated to this MediaPlayer
+  /// It is a logic error to use this MediaPlayer after calling this function
+  #[napi]
+  pub fn dispose(self) -> napi::Result<()>  {
+    Ok(())
+  }
+
   /// Adds an event listener to the MediaPlayer
+  ///
+  /// 'buttonpressed' - Emitted when a media services button is pressed
+  /// 'positionchanged' - Emitted when the media service requests a position change
+  /// 'positionseeked' - Emitted when the media service requests a forward or backward position seek from current position
   #[napi]
   #[allow(dead_code)]
   pub fn add_event_listener(
     &mut self,
     _env: Env,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] _event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] _event_name: String,
     _callback: JsFunction,
   ) -> napi::Result<()> {
     Ok(())
@@ -100,7 +111,7 @@ impl MediaPlayer {
   #[allow(dead_code)]
   pub fn remove_event_listener(
     &mut self,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] _event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] _event_name: String,
     _callback: JsFunction,
   ) -> napi::Result<()> {
     Ok(())
@@ -114,7 +125,7 @@ impl MediaPlayer {
   pub fn on(
     &mut self,
     _env: Env,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] _event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] _event_name: String,
     _callback: JsFunction,
   ) -> napi::Result<()> {
     Ok(())
@@ -127,7 +138,7 @@ impl MediaPlayer {
   #[allow(dead_code)]
   pub fn off(
     &mut self,
-    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged'")] _event_name: String,
+    #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")] _event_name: String,
     _callback: JsFunction,
   ) -> napi::Result<()> {
     Ok(())
@@ -236,6 +247,20 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Gets the seek enbled state
+  #[napi(getter)]
+  #[allow(dead_code)]
+  pub fn get_seek_enabled(&self) -> napi::Result<bool> {
+    Ok(false)
+  }
+
+  /// Sets the seek enbled state
+  #[napi(setter)]
+  #[allow(dead_code)]
+  pub fn set_seek_enabled(&mut self, _enabled: bool) -> napi::Result<()> {
+    Ok(())
+  }
+
   /// Gets the next button enbled state
   #[napi(getter)]
   #[allow(dead_code)]
@@ -334,6 +359,20 @@ impl MediaPlayer {
   #[napi(setter)]
   #[allow(dead_code)]
   pub fn set_album_title(&mut self, _album_title: String) -> napi::Result<()> {
+    Ok(())
+  }
+
+  /// Gets the track id
+  #[napi(getter)]
+  #[allow(dead_code)]
+  pub fn get_track_id(&self) -> napi::Result<String> {
+    Ok("".to_string())
+  }
+
+  /// Sets the track id
+  #[napi(setter)]
+  #[allow(dead_code)]
+  pub fn set_track_id(&mut self, _album_title: String) -> napi::Result<()> {
     Ok(())
   }
 }
