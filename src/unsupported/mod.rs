@@ -83,13 +83,6 @@ impl MediaPlayer {
     Ok(())
   }
 
-  /// Disposes any native resources allocated to this MediaPlayer
-  /// It is a logic error to use this MediaPlayer after calling this function
-  #[napi]
-  pub fn dispose(self) -> napi::Result<()>  {
-    Ok(())
-  }
-
   /// Adds an event listener to the MediaPlayer
   ///
   /// 'buttonpressed' - Emitted when a media services button is pressed
