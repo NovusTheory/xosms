@@ -1,10 +1,12 @@
+use napi::{JsNumber, JsString, JsValue, Status, Unknown};
 mod dbus;
 
+use napi::bindgen_prelude::{create_custom_tokio_runtime, Function, ToNapiValue};
 use std::{
   sync::{Arc, RwLock},
   time::{Duration, Instant},
 };
-
+use std::sync::OnceLock;
 use ::dbus::{
   arg::{PropMap, Variant},
   blocking::stdintf::org_freedesktop_dbus::{EmitsChangedSignal, PropertiesPropertiesChanged},
@@ -16,10 +18,11 @@ use dbus_crossroads::Crossroads;
 use float_duration::FloatDuration;
 use napi::{
   bindgen_prelude::ObjectFinalize,
-  threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Env, JsFunction, NapiRaw,
+  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  Env,
 };
-
+use napi::threadsafe_function::ThreadsafeCallContext;
+use tokio::runtime::Handle;
 use self::dbus::{
   mediaplayer2::{register_org_mpris_media_player2, OrgMprisMediaPlayer2},
   mediaplayer2_player::{
@@ -30,7 +33,7 @@ use self::dbus::{
 };
 
 #[napi]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MediaPlayerThumbnailType {
   Unknown = -1,
   File = 1,
@@ -38,19 +41,32 @@ pub enum MediaPlayerThumbnailType {
 }
 
 #[napi]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MediaPlayerMediaType {
   Unknown = -1,
   Music = 1,
 }
 
 #[napi]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MediaPlayerPlaybackStatus {
   Unknown = -1,
   Playing = 1,
   Paused = 2,
   Stopped = 3,
+}
+
+static TOKIO_HANDLE: OnceLock<Handle> = OnceLock::new();
+
+#[napi_derive::module_init]
+fn init() {
+  let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .thread_name("xosms-native-tokio")
+      .build()
+      .unwrap();
+  TOKIO_HANDLE.set(rt.handle().clone()).expect("Tokio handle already initialized");
+  create_custom_tokio_runtime(rt);
 }
 
 #[napi]
@@ -94,15 +110,18 @@ impl MediaPlayerThumbnail {
   }
 }
 
+type WeakStringTsfn = ThreadsafeFunction<String, Unknown<'static>, String, Status, true, true, 0>;
+type WeakNumberTsfn = ThreadsafeFunction<f64, Unknown<'static>, f64, Status, true, true, 0>;
+
 #[napi(custom_finalize)]
 struct MediaPlayer {
   service_name: String,
   button_pressed_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<String, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakStringTsfn>>,
   playback_position_changed_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakNumberTsfn>>,
   playback_position_seeked_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakNumberTsfn>>,
   player_state: Arc<RwLock<MprisPlayerState>>,
   properties_changed: PropertiesPropertiesChanged,
   active: bool,
@@ -115,13 +134,13 @@ impl MediaPlayer {
   #[allow(dead_code)]
   pub fn new(service_name: String, identity: String) -> napi::Result<Self> {
     let button_pressed_listeners: Arc<
-      DashMap<usize, ThreadsafeFunction<String, ErrorStrategy::CalleeHandled>>,
+      DashMap<usize, WeakStringTsfn>,
     > = Arc::new(DashMap::new());
     let playback_position_changed_listeners: Arc<
-      DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>,
+      DashMap<usize, WeakNumberTsfn>,
     > = Arc::new(DashMap::new());
     let playback_position_seeked_listeners: Arc<
-      DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>,
+      DashMap<usize, WeakNumberTsfn>,
     > = Arc::new(DashMap::new());
     let mpris_player_state = Arc::new(RwLock::new(MprisPlayerState {
       identity,
@@ -157,7 +176,7 @@ impl MediaPlayer {
         invalidated_properties: vec![],
       },
       active: false,
-      dbus_session: DBusSession::new(),
+      dbus_session: DBusSession::new()?,
     })
   }
 
@@ -218,17 +237,16 @@ impl MediaPlayer {
     env: Env,
     #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")]
     event_name: String,
-    callback: JsFunction,
+    callback: Function<'static, ()>,
   ) -> napi::Result<()> {
     let callback_ptr = unsafe { callback.raw() as usize };
 
     match event_name.as_str() {
       "buttonpressed" => {
         if !self.button_pressed_listeners.contains_key(&callback_ptr) {
-          let mut threadsafe_callback = callback.create_threadsafe_function(0, |ctx| {
-            ctx.env.create_string_from_std(ctx.value).map(|v| vec![v])
+          let mut threadsafe_callback = callback.build_threadsafe_function().weak::<true>().callee_handled::<true>().build_callback(|ctx: ThreadsafeCallContext<String>| {
+            Ok(ctx.value)
           })?;
-          let _ = threadsafe_callback.unref(&env)?;
           self
             .button_pressed_listeners
             .insert(callback_ptr, threadsafe_callback);
@@ -239,10 +257,9 @@ impl MediaPlayer {
           .playback_position_changed_listeners
           .contains_key(&callback_ptr)
         {
-          let mut threadsafe_callback = callback.create_threadsafe_function(0, |ctx| {
-            ctx.env.create_double(ctx.value).map(|v| vec![v])
+          let mut threadsafe_callback = callback.build_threadsafe_function().weak::<true>().callee_handled::<true>().build_callback(|ctx: ThreadsafeCallContext<f64>| {
+            Ok(ctx.value)
           })?;
-          let _ = threadsafe_callback.unref(&env)?;
           self
             .playback_position_changed_listeners
             .insert(callback_ptr, threadsafe_callback);
@@ -253,10 +270,9 @@ impl MediaPlayer {
           .playback_position_seeked_listeners
           .contains_key(&callback_ptr)
         {
-          let mut threadsafe_callback = callback.create_threadsafe_function(0, |ctx| {
-            ctx.env.create_double(ctx.value).map(|v| vec![v])
+          let mut threadsafe_callback = callback.build_threadsafe_function().weak::<true>().callee_handled::<true>().build_callback(|ctx: ThreadsafeCallContext<f64>| {
+            Ok(ctx.value)
           })?;
-          let _ = threadsafe_callback.unref(&env)?;
           self
             .playback_position_seeked_listeners
             .insert(callback_ptr, threadsafe_callback);
@@ -275,7 +291,7 @@ impl MediaPlayer {
     &mut self,
     #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")]
     event_name: String,
-    callback: JsFunction,
+    callback: Function<'static, ()>,
   ) -> napi::Result<()> {
     let callback_ptr = unsafe { callback.raw() as usize };
 
@@ -321,7 +337,7 @@ impl MediaPlayer {
     env: Env,
     #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")]
     event_name: String,
-    callback: JsFunction,
+    callback: Function<'static, ()>,
   ) -> napi::Result<()> {
     self.add_event_listener(env, event_name, callback)
   }
@@ -335,7 +351,7 @@ impl MediaPlayer {
     &mut self,
     #[napi(ts_arg_type = "'buttonpressed' | 'positionchanged' | 'positionseeked'")]
     event_name: String,
-    callback: JsFunction,
+    callback: Function<'static, ()>,
   ) -> napi::Result<()> {
     self.remove_event_listener(event_name, callback)
   }
@@ -872,11 +888,11 @@ pub struct MprisPlayerState {
 
 struct MprisPlayer {
   button_pressed_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<String, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakStringTsfn>>,
   playback_position_changed_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakNumberTsfn>>,
   playback_position_seeked_listeners:
-    Arc<DashMap<usize, ThreadsafeFunction<f64, ErrorStrategy::CalleeHandled>>>,
+    Arc<DashMap<usize, WeakNumberTsfn>>,
   state: Arc<RwLock<MprisPlayerState>>,
 }
 

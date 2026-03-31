@@ -1,52 +1,52 @@
 {
-  "name": "xosms",
-  "version": "0.6.2",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "napi": {
-    "name": "xosms",
-    "triples": {
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-pc-windows-msvc",
-        "universal-apple-darwin"
-      ]
-    },
-    "package": {
-      "name": "@xosms/xosms"
-    }
-  },
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@napi-rs/cli": "^2.18.0",
-    "ava": "^6.0.1"
-  },
-  "ava": {
-    "timeout": "3m"
-  },
-  "engines": {
-    "node": ">= 10"
-  },
-  "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release --js-package-name @xosms/xosms",
-    "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
-    "test": "ava",
-    "universal": "napi universal",
-    "version": "napi version"
-  },
-  "packageManager": "yarn@4.1.0",
-  "repository": "https://github.com/NovusTheory/xosms",
-  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
-  "keywords": [
-    "electron",
-    "media",
-    "service",
-    "media service",
-    "cross",
-    "platform",
-    "cross platform"
-  ]
+	"name": "xosms",
+	"version": "0.6.2",
+	"main": "index.js",
+	"types": "index.d.ts",
+	"napi": {
+		"binaryName": "xosms",
+		"targets": [
+			"x86_64-apple-darwin",
+			"aarch64-apple-darwin",
+			"universal-apple-darwin",
+			"x86_64-unknown-linux-gnu",
+			"aarch64-unknown-linux-gnu",
+			"x86_64-pc-windows-msvc",
+			"aarch64-pc-windows-msvc"
+		],
+		"packageName": "@xosms/xosms"
+	},
+	"license": "Apache-2.0",
+	"devDependencies": {
+		"@biomejs/biome": "2.4.10",
+		"@napi-rs/cli": "^3.6.0",
+		"ava": "^7.0.0"
+	},
+	"ava": {
+		"timeout": "3m"
+	},
+	"engines": {
+		"node": ">= 10"
+	},
+	"scripts": {
+		"artifacts": "napi artifacts",
+		"build": "napi build --platform --release --js-package-name @xosms/xosms",
+		"build:debug": "napi build --platform",
+		"prepublishOnly": "napi prepublish -t npm",
+		"test": "ava",
+		"universal": "napi universalize",
+		"version": "napi version",
+		"createNpmDirs": "napi create-npm-dirs"
+	},
+	"repository": "https://github.com/NovusTheory/xosms",
+	"description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
+	"keywords": [
+		"electron",
+		"media",
+		"service",
+		"media service",
+		"cross",
+		"platform",
+		"cross platform"
+	]
 }
