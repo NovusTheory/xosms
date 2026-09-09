@@ -121,11 +121,11 @@ fn acquire_clear_poison_write<'lock, T>(lock: &'lock RwLock<T>) -> RwLockWriteGu
 /// Indicates whether this platform shares all instances of MediaPlayer. Independent MediaPlayer's override the same information to the platform's media service.
 #[napi]
 pub fn platform_shares_media_players() -> bool {
-  if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
+  if cfg!(target_os = "macos") {
     return true;
   }
 
-  return false;
+  false
 }
 
 #[napi]
