@@ -1,30 +1,44 @@
+
 [package]
-edition = "2021"
+edition = "2024"
 name = "xosms"
-version = "0.0.0"
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.12.2", default-features = false, features = ["napi9", "async"] }
-napi-derive = "2.12.2"
+napi-derive = "3.0.0"
+tokio = { version = "1.53.1", features = ["sync", "time"] }
 
-[target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.54.0", features = ["Foundation", "Media", "Media_Playback", "Storage", "Storage_Streams"] }
-dashmap = "5.5.3"
+[dependencies.napi]
+version = "3.0.0"
+features = ["napi4", "async"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
-dbus = { version = "0.9.7", features = ["vendored"] }
-dbus-crossroads = "0.5.2"
-dashmap = "5.5.3"
-float_duration = { version = "0.3.3", default-features = false }
-oneshot = "0.1.6"
+zbus = { version = "5.19.0", features = ["tokio"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-core = "0.100"
+windows-time = "0.100"
+windows-strings = "0.100"
+windows-future = "0.100"
+windows-collections = "0.100"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-core-foundation = "0.3"
+objc2-app-kit = "0.3"
+objc2-media-player = "0.3"
+block2 = "0.6"
+libuv-sys2 = "1.52"
 
 [build-dependencies]
-napi-build = "2.0.1"
+napi-build = "2"
+windows-bindgen = "0.100"
 
 [profile.release]
 lto = true
+codegen-units = 1
 strip = "symbols"

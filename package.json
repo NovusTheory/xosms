@@ -1,45 +1,14 @@
 {
   "name": "xosms",
-  "version": "0.6.2",
+  "version": "0.7.0",
+  "description": "A native cross platform media service library for node",
   "main": "index.js",
   "types": "index.d.ts",
-  "napi": {
-    "name": "xosms",
-    "triples": {
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-pc-windows-msvc",
-        "universal-apple-darwin"
-      ]
-    },
-    "package": {
-      "name": "@xosms/xosms"
-    }
+  "repository": {
+    "url": "git+ssh://git@github.com/novustheory/xosms.git",
+    "type": "git"
   },
   "license": "Apache-2.0",
-  "devDependencies": {
-    "@napi-rs/cli": "^2.18.0",
-    "ava": "^6.0.1"
-  },
-  "ava": {
-    "timeout": "3m"
-  },
-  "engines": {
-    "node": ">= 10"
-  },
-  "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release --js-package-name @xosms/xosms",
-    "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
-    "test": "ava",
-    "universal": "napi universal",
-    "version": "napi version"
-  },
-  "packageManager": "yarn@4.1.0",
-  "repository": "https://github.com/NovusTheory/xosms",
-  "description": "Cross platform media service module. Hooks into each operating system's native media service and provides a simple API to access and use it.",
   "keywords": [
     "electron",
     "media",
@@ -47,6 +16,88 @@
     "media service",
     "cross",
     "platform",
-    "cross platform"
-  ]
+    "cross platform",
+    "napi-rs",
+    "NAPI",
+    "N-API",
+    "Rust",
+    "node-addon",
+    "node-addon-api"
+  ],
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "napi": {
+    "binaryName": "xosms",
+    "packageName": "@xosms/xosms",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu"
+    ]
+  },
+  "engines": {
+    "node": ">= 10.16.0 < 11 || >= 11.8.0 < 12 || >= 12.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --no-const-enum --platform --release",
+    "build:debug": "napi build --no-const-enum --platform",
+    "format": "run-p format:oxfmt format:rs",
+    "format:oxfmt": "oxfmt",
+    "format:rs": "cargo fmt",
+    "lint": "oxlint",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "ava",
+    "version": "napi version",
+    "createnpmdirs": "napi create-npm-dirs"
+  },
+  "devDependencies": {
+    "@emnapi/core": "^2.0.0-alpha.4",
+    "@emnapi/runtime": "^2.0.0-alpha.4",
+    "@napi-rs/cli": "^3.8.6",
+    "@napi-rs/wasm-runtime": "^1.2.3",
+    "@oxc-node/core": "^0.1.0",
+    "ava": "^8.0.1",
+    "chalk": "^6.0.0",
+    "emnapi": "^2.0.0-alpha.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
+    "npm-run-all2": "^9.0.3",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "prettier": "^3.9.6",
+    "tinybench": "^6.1.3",
+    "typescript": "^7.0.2"
+  },
+  "lint-staged": {
+    "*.@(js|ts|tsx)": [
+      "oxlint --fix"
+    ],
+    "*.@(js|ts|tsx|yml|yaml|md|json|toml)": [
+      "oxfmt --write"
+    ]
+  },
+  "ava": {
+    "extensions": [
+      "ts"
+    ],
+    "timeout": "2m",
+    "workerThreads": false,
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json"
+    },
+    "nodeArguments": [
+      "--import",
+      "@oxc-node/core/register"
+    ]
+  },
+  "packageManager": "pnpm@11.22.0"
 }

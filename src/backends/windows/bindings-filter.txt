@@ -1,0 +1,60 @@
+// TODO: Clean this file up by excluding everything not needed for Xosms to function
+
+// Base SMTC
+Windows.Media.SystemMediaTransportControls
+Windows.Media.ISystemMediaTransportControls
+Windows.Media.ISystemMediaTransportControls2
+
+// Needed but we don't use what it provides so it's omitted
+Windows.Media.ISystemMediaTransportControlsStatics
+!Windows.Media.ISystemMediaTransportControlsStatics::GetForCurrentView
+
+Windows.Media.SystemMediaTransportControlsDisplayUpdater
+Windows.Media.ISystemMediaTransportControlsDisplayUpdater
+!Windows.Media.ISystemMediaTransportControlsDisplayUpdater::CopyFromFileAsync
+
+// SMTC ButtonPressed event
+Windows.Media.SystemMediaTransportControlsButtonPressedEventArgs
+Windows.Media.ISystemMediaTransportControlsButtonPressedEventArgs
+Windows.Media.SystemMediaTransportControlsButton
+
+// SMTC PlaybackPositionChangeRequested event
+Windows.Media.PlaybackPositionChangeRequestedEventArgs
+Windows.Media.IPlaybackPositionChangeRequestedEventArgs
+
+// This offers the independent MediaPlayer sources 
+Windows.Media.Playback.MediaPlayer
+Windows.Media.Playback.IMediaPlayer2
+!Windows.Media.Playback.IMediaPlayer2::{AudioCategory, AudioDeviceType}
+
+// This offers MusicProperties interface
+Windows.Media.MusicDisplayProperties
+Windows.Media.IMusicDisplayProperties
+Windows.Media.IMusicDisplayProperties2
+Windows.Media.IMusicDisplayProperties3
+
+// This offers the Timeline interface
+Windows.Media.SystemMediaTransportControlsTimelineProperties
+Windows.Media.ISystemMediaTransportControlsTimelineProperties
+
+// Shuffle
+Windows.Media.IShuffleEnabledChangeRequestedEventArgs
+
+// AutoRepeatMode
+Windows.Media.IAutoRepeatModeChangeRequestedEventArgs
+
+// Required to handle events from SMTC
+Windows.Foundation.TypedEventHandler
+
+Windows.Foundation.Uri
+Windows.Foundation.IUriEscapeStatics
+Windows.Foundation.IUriRuntimeClassFactory
+
+Windows.Storage.IStorageFileStatics
+Windows.Storage.IStorageFileStatics2
+
+Windows.System.IUserStatics
+Windows.System.IUserStatics2
+
+// Required to create thumbnail from file or uri
+Windows.Storage.Streams.IRandomAccessStreamReferenceStatics

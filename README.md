@@ -1,44 +1,81 @@
-# Xosms [![build](https://github.com/NovusTheory/xosms/actions/workflows/CI.yml/badge.svg?branch=dev)](https://github.com/NovusTheory/xosms/actions/workflows/CI.yml) [![npm version](https://badge.fury.io/js/xosms.svg)](https://badge.fury.io/js/xosms)
-A cross platform media service library made in Rust for Node to easily and seamelessly integrate with the operating systems media service API.
+# Xosms [![npm version](https://badge.fury.io/js/xosms.svg)](https://badge.fury.io/js/xosms)
+A cross platform media service library made in Rust for Node to easily integrate with the platforms media service.
 
-## Current Platforms Supported
+## Platforms Supported
 - [x] Windows
-- [ ] MacOS
+- [x] MacOS
 - [x] Linux (via MPRIS)
 
-Even if your platform above isn't currently supported, the beauty of xosms is that it will still compile for it but noop on everything.
-
-## Basic Usage
+## Example Usage
 ```javascript
-import { MediaPlayer, MediaPlayerMediaType, MediaPlayerPlaybackStatus, MediaPlayerThumbnail, MediaPlayerThumbnailType } from "xosms";
+import { MediaPlayer, MediaPlayerThumbnail, platformSharesMediaPlayers } from "xosms";
 
-// Create a new MediaPlayer. If the OS permits it you can create as many of these as you like for different media players
-const mp = new MediaPlayer("my-media-player", "My Media Player");
-mp.playButtonEnabled = true;
-mp.pauseButtonEnabled = true;
-mp.title = "An Awesome Song";
-mp.artist = "An Awesome Artist";
-mp.albumTitle = "An Awesome Album";
+const mediaPlayer = new MediaPlayer("test-xosms", "Test Xosms");
+mediaPlayer.title = "Test Title";
+mediaPlayer.artist = ["Test Artist"];
+mediaPlayer.albumTitle = "Test Album";
+mediaPlayer.volume = 1.0;
+mediaPlayer.playbackRate = 1.0;
+mediaPlayer.minimumPlaybackRate = 0.25;
+mediaPlayer.maximumPlaybackRate = 2.0;
+mediaPlayer.playbackRate = 1.0;
+mediaPlayer.nextButtonEnabled = true;
+mediaPlayer.previousButtonEnabled = true;
+mediaPlayer.playButtonEnabled = true;
+mediaPlayer.pauseButtonEnabled = true;
+mediaPlayer.stopButtonEnabled = true;
+mediaPlayer.seekEnabled = true;
+mediaPlayer.fullscreen = false;
+mediaPlayer.thumbnail = await MediaPlayerThumbnail.create("uri", "https://placehold.co/128x128.png?text=1");
 
-// Every event in Xosms emits a nullable error as the first argument of the callback. This includes any error data that may have occured.
-mp.on("buttonpressed", (err, button) => {
-  if (button == "play") {
-    // play media
-  } else if (button == "pause") {
-    // pause media
-  }
+// Callbacks can be a Promise and Xosms will wait for your callback to finish before calling the next ready callback.
+//  The next callback could be a button press, a position change, etc. Xosms works through events from the media service in order
+mediaPlayer.setButtonPressedCallback(async (button) => {
+  // Act upon a button from the media service
 });
+mediaPlayer.setPositionChangedCallback(async (position) => {
+  // Set position
+});
+mediaPlayer.setPositionSeekedCallback(async (seek) => {
+  // Seek forward or backward this amount
+});
+mediaPlayer.setLoopChangedCallback(async (loopType) => {
+  // Set loop mode
+});
+mediaPlayer.setRateChangedCallback(async (rate) => {
+  // Set playback rate
+});
+mediaPlayer.setShuffleChangedCallback(async (shuffle) => {
+  // Set shuffle
+});
+mediaPlayer.setVolumeChangedCallback(async (volume) => {
+  // Set volume
+})
 
-// Activate the MediaPlayer which will begin showing it in the OS. Likewise you can call `deactivate()` to remove it.
-mp.activate()
+// You must call update anytime you make changes to the MediaPlayer properties. The platform will only display changes when this is called
+await mediaPlayer.update();
+// Activates this MediaPlayer which will register it to the platform and start presenting information
+await mediaPlayer.activate();
+
+// It is critical that when you are done with the MediaPlayer you call dispose!
+// You are at the mercy of the garbage collector if you do not call this to clean up any actively used platform natives
+mediaPlayer.dispose();
+
+// Sometimes a platforms media service is singleton per process like macOS. Use this function to detect that
+//
+// Xosms doesn't prevent you from having multiple MediaPlayer instances but behavior will not work how you think.
+//  Calling `activate` will make button presses be passed to that instance
+//  The latest `update` call from any MediaPlayer is the information used for the platform
+if (platformSharesMediaPlayers()) {
+  // Ensure only a single MediaPlayer is used
+}
 ```
 
 # Development
-To setup and locally develop and build xosms please ensure you have
-- Rust
-- Yarn
+To locally develop and build xosms ensure you have
+- rust
+- pnpm
 
 Once you have all of the above you can clone the repository and run
-- `yarn`
-- `yarn build` (Compiles the rust natives)
-- `yarn build:lib` (Runs tsc)
+- `pnpm`
+- `pnpm build`
