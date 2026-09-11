@@ -105,7 +105,7 @@ pub struct MediaPlayer {
   callbacks: Arc<AsyncRwLock<TSFNCallbacks>>,
   callbacks_rx: Mutex<Option<Receiver<PlatformBackendEvent>>>,
   callbacks_task_handle: Mutex<Option<JoinHandle<()>>>,
-  fatal_proxy: Arc<ThreadsafeFunction<Error, (), (), Status, false>>
+  fatal_proxy: Arc<ThreadsafeFunction<Error, (), (), Status, false, true>>
 }
 
 fn acquire_clear_poison_read<'lock, T>(lock: &'lock RwLock<T>) -> RwLockReadGuard<'lock, T> {
@@ -150,7 +150,7 @@ impl MediaPlayer {
     }
 
     let fatal_proxy: napi::bindgen_prelude::Function<'_, (), ()> = env.create_function_from_closure("xosmsFatalExceptionProxy", |_ctx| Ok(()))?;
-    let tsfn_fatal_proxy = fatal_proxy.build_threadsafe_function::<napi::Error>().build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
+    let tsfn_fatal_proxy = fatal_proxy.build_threadsafe_function::<napi::Error>().weak().build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
       // napi-rs ctx.env.fatal_exception doesn't actually call napi_fatal_exception and I'm certain this is an upstream bug
       unsafe {
         let env_ptr = ctx.env.raw();
