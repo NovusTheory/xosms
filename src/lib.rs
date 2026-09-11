@@ -4,9 +4,9 @@ mod backends;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use napi::{Env, Error, Status, bindgen_prelude::Promise, threadsafe_function::ThreadsafeFunction};
+use napi::{Env, Error, Status, bindgen_prelude::Promise, threadsafe_function::{ThreadsafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode}};
 use napi_derive::napi;
-use tokio::{sync::{Mutex, RwLock as AsyncRwLock, mpsc::{self, Receiver}}, task::{self, JoinHandle}};
+use tokio::{sync::{Mutex, RwLock as AsyncRwLock, mpsc::{self, Receiver}}, task::JoinHandle};
 
 use crate::backends::{PlatformBackend, PlatformThumbnailBackend, common::PlatformBackendEvent};
 
@@ -104,7 +104,8 @@ pub struct MediaPlayer {
   state: RwLock<MediaPlayerState>,
   callbacks: Arc<AsyncRwLock<TSFNCallbacks>>,
   callbacks_rx: Mutex<Option<Receiver<PlatformBackendEvent>>>,
-  callbacks_task_handle: Mutex<Option<JoinHandle<()>>>
+  callbacks_task_handle: Mutex<Option<JoinHandle<()>>>,
+  fatal_proxy: Arc<ThreadsafeFunction<Error, (), (), Status, false>>
 }
 
 fn acquire_clear_poison_read<'lock, T>(lock: &'lock RwLock<T>) -> RwLockReadGuard<'lock, T> {
@@ -120,6 +121,13 @@ fn acquire_clear_poison_write<'lock, T>(lock: &'lock RwLock<T>) -> RwLockWriteGu
 }
 
 /// Indicates whether this platform shares all instances of MediaPlayer
+/// 
+/// @remarks
+/// When this method returns true the follow changes are likely
+/// - {@link MediaPlayer.activate} sends all callbacks from the platform backend to this MediaPlayer
+/// - {@link MediaPlayer.deactivate} removes callbacks from the platform backend which implicitly deactivates all MediaPlayer instances
+/// - {@link MediaPlayer.update} sets the platform backend information from this MediaPlayer
+/// - {@link MediaPlayer.setTimeline} does the same as {@link MediaPlayer.update} but only affects timeline information
 #[napi]
 pub fn platform_shares_media_players() -> bool {
   if cfg!(target_os = "macos") {
@@ -136,10 +144,21 @@ impl MediaPlayer {
   /// @param serviceName - A unique id for the MediaPlayer which cannot be re-used while active
   /// @param identity - A display name for the MediaPlayer
   #[napi(constructor)]
-  pub fn new(service_name: String, identity: String) -> napi::Result<Self> {
+  pub fn new(service_name: String, identity: String, env: &Env) -> napi::Result<Self> {
     if !is_valid_service_name(&service_name) {
       return Err(Error::new(Status::InvalidArg, "serviceName must only contain the ASCII characters '[A-Z][a-z][0-9]_-'"));
     }
+
+    let fatal_proxy: napi::bindgen_prelude::Function<'_, (), ()> = env.create_function_from_closure("xosmsFatalExceptionProxy", |_ctx| Ok(()))?;
+    let tsfn_fatal_proxy = fatal_proxy.build_threadsafe_function::<napi::Error>().build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
+      // napi-rs ctx.env.fatal_exception doesn't actually call napi_fatal_exception and I'm certain this is an upstream bug
+      unsafe {
+        let env_ptr = ctx.env.raw();
+        let js_error = napi::JsError::from(ctx.value).into_value(env_ptr);
+        assert!(napi::sys::napi_fatal_exception(env_ptr, js_error) == napi::sys::Status::napi_ok);
+      }
+      Ok(())
+    })?;
 
     let (callback_tx, callback_rx) = mpsc::channel::<PlatformBackendEvent>(128);
 
@@ -153,7 +172,8 @@ impl MediaPlayer {
       state: RwLock::new(state),
       callbacks: Arc::new(AsyncRwLock::new(TSFNCallbacks::default())),
       callbacks_rx: Mutex::new(Some(callback_rx)),
-      callbacks_task_handle: Mutex::new(None)
+      callbacks_task_handle: Mutex::new(None),
+      fatal_proxy: Arc::new(tsfn_fatal_proxy)
     })
   }
 
@@ -168,6 +188,7 @@ impl MediaPlayer {
       if let Some(mut callback_rx) = callbacks_rx.take() {
         let mut callbacks_task_handle = self.callbacks_task_handle.lock().await;
         let callbacks = self.callbacks.clone();
+        let fatal_proxy = self.fatal_proxy.clone();
         let join_handle = tokio::spawn(async move {
           while let Some(event) = callback_rx.recv().await {
             let callbacks = callbacks.read().await;
@@ -177,7 +198,12 @@ impl MediaPlayer {
                     let result = callback.call_async(button).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -187,7 +213,12 @@ impl MediaPlayer {
                     let result = callback.call_async(position).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -197,7 +228,12 @@ impl MediaPlayer {
                     let result = callback.call_async(offset).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -207,7 +243,12 @@ impl MediaPlayer {
                     let result = callback.call_async(loop_type).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -217,7 +258,12 @@ impl MediaPlayer {
                     let result = callback.call_async(rate).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -227,7 +273,12 @@ impl MediaPlayer {
                     let result = callback.call_async(shuffle).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
@@ -237,11 +288,16 @@ impl MediaPlayer {
                     let result = callback.call_async(volume).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        let _ = promise.await;
+                        match promise.await {
+                          Err(err) => {
+                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                          }
+                          _ => {}
+                        };
                       }
                     }
                   }
-                },
+                }
             }
           }
         });
@@ -324,7 +380,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a button press
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (button: ButtonPressedType) => Promise<void> | void")]
   pub fn set_button_pressed_callback(&self, callback: ButtonPressedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().button_pressed = Some(callback);
@@ -335,7 +390,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a position change
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (position: number) => Promise<void> | void")]
   pub fn set_position_changed_callback(&self, callback: PositionChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().position_changed = Some(callback);
@@ -346,7 +400,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a position seek
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (offset: number) => Promise<void> | void")]
   pub fn set_position_seeked_callback(&self, callback: PositionSeekedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().position_seeked = Some(callback);
@@ -357,7 +410,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a loop change
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (loop: LoopType) => Promise<void> | void")]
   pub fn set_loop_changed_callback(&self, callback: LoopChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().loop_changed = Some(callback);
@@ -368,7 +420,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a playback rate change
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (rate: number) => Promise<void> | void")]
   pub fn set_rate_changed_callback(&self, callback: RateChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().rate_changed = Some(callback);
@@ -379,7 +430,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a shuffle change
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (shuffle: boolean) => Promise<void> | void")]
   pub fn set_shuffle_changed_callback(&self, callback: ShuffleChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().shuffle_changed = Some(callback);
@@ -390,7 +440,6 @@ impl MediaPlayer {
   /// Sets the callback when the media service sends a volume change
   /// 
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
-  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (volume: number) => Promise<void> | void")]
   pub fn set_volume_changed_callback(&self, callback: VolumeChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().volume_changed = Some(callback);

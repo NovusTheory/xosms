@@ -13,7 +13,7 @@ tokio = { version = "1.53.1", features = ["sync", "time"] }
 
 [dependencies.napi]
 version = "3.0.0"
-features = ["napi4", "async"]
+features = ["napi5", "async"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5.19.0", features = ["tokio"] }
