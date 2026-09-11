@@ -37,49 +37,42 @@ export declare class MediaPlayer {
    * Sets the callback when the media service sends a button press
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setButtonPressedCallback(callback: (button: ButtonPressedType) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a position change
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setPositionChangedCallback(callback: (position: number) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a position seek
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setPositionSeekedCallback(callback: (offset: number) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a loop change
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setLoopChangedCallback(callback: (loop: LoopType) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a playback rate change
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setRateChangedCallback(callback: (rate: number) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a shuffle change
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setShuffleChangedCallback(callback: (shuffle: boolean) => Promise<void> | void): void
   /**
    * Sets the callback when the media service sends a volume change
    *
    * If this callback is a {@link Promise} xosms will wait for it to resolve
-   * @remarks {@link Promise} based callbacks will have errors silently discarded
    */
   setVolumeChangedCallback(callback: (volume: number) => Promise<void> | void): void
   get playButtonEnabled(): boolean
@@ -150,7 +143,16 @@ export type LoopType =  'none'|
 export type MediaPlayerThumbnailType =  'file'|
 'uri';
 
-/** Indicates whether this platform shares all instances of MediaPlayer */
+/**
+ * Indicates whether this platform shares all instances of MediaPlayer
+ *
+ * @remarks
+ * When this method returns true the follow changes are likely
+ * - {@link MediaPlayer.activate} sends all callbacks from the platform backend to this MediaPlayer
+ * - {@link MediaPlayer.deactivate} removes callbacks from the platform backend which implicitly deactivates all MediaPlayer instances
+ * - {@link MediaPlayer.update} sets the platform backend information from this MediaPlayer
+ * - {@link MediaPlayer.setTimeline} does the same as {@link MediaPlayer.update} but only affects timeline information
+ */
 export declare function platformSharesMediaPlayers(): boolean
 
 export type PlaybackStatus =  'playing'|
