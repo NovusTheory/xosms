@@ -1,7 +1,7 @@
 {
   "name": "xosms",
   "version": "0.7.0",
-  "description": "A native cross platform media service library for node",
+  "description": "A native cross platform media service library",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": {

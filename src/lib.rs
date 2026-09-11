@@ -95,6 +95,7 @@ pub enum PlaybackStatus {
   Stopped
 }
 
+/// A MediaPlayer instance that provides independent information and controls
 #[napi]
 pub struct MediaPlayer {
   // We use a Mutex for the PlatformBackend as accessing the PlatformBackend mutably is within an async context and is unsafe
@@ -118,7 +119,7 @@ fn acquire_clear_poison_write<'lock, T>(lock: &'lock RwLock<T>) -> RwLockWriteGu
   })
 }
 
-/// Indicates whether this platform shares all instances of MediaPlayer. Independent MediaPlayer's override the same information to the platform's media service.
+/// Indicates whether this platform shares all instances of MediaPlayer
 #[napi]
 pub fn platform_shares_media_players() -> bool {
   if cfg!(target_os = "macos") {
@@ -130,7 +131,10 @@ pub fn platform_shares_media_players() -> bool {
 
 #[napi]
 impl MediaPlayer {
-  /// Creates a MediaPlayer which provides an independent source of controls and information on the platform backend
+  /// Creates a MediaPlayer instance
+  /// 
+  /// @param serviceName - A unique id for the MediaPlayer which cannot be re-used while active
+  /// @param identity - A display name for the MediaPlayer
   #[napi(constructor)]
   pub fn new(service_name: String, identity: String) -> napi::Result<Self> {
     if !is_valid_service_name(&service_name) {
@@ -154,6 +158,8 @@ impl MediaPlayer {
   }
 
   /// Activates this MediaPlayer by starting the platform backend
+  /// 
+  /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn activate(&self) -> Result<(), Error> {
     let mut backend = self.backend.lock().await;
@@ -253,6 +259,8 @@ impl MediaPlayer {
   }
 
   /// Deactivates this MediaPlayer by stopping the platform backend
+  /// 
+  /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn deactivate(&self) -> Result<(), Error> {
     let mut callbacks_task = self.callbacks_task_handle.lock().await ;
@@ -273,6 +281,8 @@ impl MediaPlayer {
   }
 
   /// Updates the platform backend with the latest state
+  /// 
+  /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn update(&self) -> Result<(), Error> {
     let backend = self.backend.lock().await;
@@ -295,7 +305,7 @@ impl MediaPlayer {
 
   /// Sets the timeline data
   /// 
-  /// This function does not require `MediaPlayer.update()` to be called and immediately sends changes to the platform backend
+  /// This function does not require {@link MediaPlayer.update} to be called and immediately sends changes to the platform backend
   #[napi]
   pub async fn set_timeline(&self, duration: f64, position: f64) -> Result<(), Error> {
     let mut backend = self.backend.lock().await;
@@ -311,6 +321,10 @@ impl MediaPlayer {
   }
 
   // napi-rs doesn't know how to unwrap the custom defined types
+  /// Sets the callback when the media service sends a button press
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (button: ButtonPressedType) => Promise<void> | void")]
   pub fn set_button_pressed_callback(&self, callback: ButtonPressedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().button_pressed = Some(callback);
@@ -318,6 +332,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a position change
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (position: number) => Promise<void> | void")]
   pub fn set_position_changed_callback(&self, callback: PositionChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().position_changed = Some(callback);
@@ -325,6 +343,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a position seek
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (offset: number) => Promise<void> | void")]
   pub fn set_position_seeked_callback(&self, callback: PositionSeekedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().position_seeked = Some(callback);
@@ -332,6 +354,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a loop change
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (loop: LoopType) => Promise<void> | void")]
   pub fn set_loop_changed_callback(&self, callback: LoopChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().loop_changed = Some(callback);
@@ -339,6 +365,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a playback rate change
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (rate: number) => Promise<void> | void")]
   pub fn set_rate_changed_callback(&self, callback: RateChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().rate_changed = Some(callback);
@@ -346,6 +376,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a shuffle change
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (shuffle: boolean) => Promise<void> | void")]
   pub fn set_shuffle_changed_callback(&self, callback: ShuffleChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().shuffle_changed = Some(callback);
@@ -353,6 +387,10 @@ impl MediaPlayer {
     Ok(())
   }
 
+  /// Sets the callback when the media service sends a volume change
+  /// 
+  /// If this callback is a {@link Promise} xosms will wait for it to resolve
+  /// @remarks {@link Promise} based callbacks will have errors silently discarded
   #[napi(ts_args_type = "callback: (volume: number) => Promise<void> | void")]
   pub fn set_volume_changed_callback(&self, callback: VolumeChangedCallbackTSFN) -> Result<(), Error> {
     self.callbacks.blocking_write().volume_changed = Some(callback);
@@ -582,7 +620,7 @@ impl MediaPlayer {
   }
 
 
-  /// Disposes this MediaPlayer releasing all native resources. This MediaPlayer can no longer be used after calling this
+  /// Disposes this MediaPlayer releasing all native resources
   #[napi]
   pub fn dispose(&self) {
     drop(self.backend.blocking_lock().take())
@@ -596,6 +634,7 @@ pub enum MediaPlayerThumbnailType {
   Uri
 }
 
+/// A MediaPlayerThumbnail instance which may hold native resources for the platform to use on a MediaPlayer
 #[napi]
 pub struct MediaPlayerThumbnail {
   thumbnail_type: MediaPlayerThumbnailType,
@@ -604,6 +643,10 @@ pub struct MediaPlayerThumbnail {
 
 #[napi]
 impl MediaPlayerThumbnail {
+  /// Creates a MediaPlayerThumbnail instance
+  /// 
+  /// @param thumbnailType - The type of thumbnail being created
+  /// @param thumbnail - A uri or file path pointing to the thumbnail
   #[napi(factory)]
   pub async fn create(thumbnail_type: MediaPlayerThumbnailType, thumbnail: String) -> Result<Self, Error> {
     Ok(Self {
