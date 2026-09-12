@@ -1,3 +1,4 @@
+#![allow(unused)] // Errors are fine to be unused as they are typically constructed and passed to node making it unused in rust
 
 #[cfg(target_os = "windows")]
 #[derive(Debug)]
