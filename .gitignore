@@ -189,3 +189,6 @@ Temporary Items
 ### macOS Patch ###
 # iCloud generated files
 *.icloud
+
+# Generated npm dirs folder from napi-rs
+npm/
