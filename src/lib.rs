@@ -1,5 +1,3 @@
-#![deny(clippy::all)]
-
 mod backends;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -199,12 +197,9 @@ impl MediaPlayer {
                     let result = callback.call_async(button).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -214,12 +209,9 @@ impl MediaPlayer {
                     let result = callback.call_async(position).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -229,12 +221,9 @@ impl MediaPlayer {
                     let result = callback.call_async(offset).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -244,12 +233,9 @@ impl MediaPlayer {
                     let result = callback.call_async(loop_type).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -259,12 +245,9 @@ impl MediaPlayer {
                     let result = callback.call_async(rate).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -274,12 +257,9 @@ impl MediaPlayer {
                     let result = callback.call_async(shuffle).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
@@ -289,12 +269,9 @@ impl MediaPlayer {
                     let result = callback.call_async(volume).await;
                     if let Ok(promise_result) = result {
                       if let Some(promise) = promise_result {
-                        match promise.await {
-                          Err(err) => {
-                            fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                          }
-                          _ => {}
-                        };
+                        if let Err(err) = promise.await {
+                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                        }
                       }
                     }
                   }
