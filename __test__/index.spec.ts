@@ -1,6 +1,9 @@
 // TODO: Implement more tests and correctfully
 
 import test from 'ava'
+import path from 'path'
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 import { MediaPlayer, MediaPlayerThumbnail } from '../index.js'
 
@@ -58,5 +61,5 @@ test('can set and update all MediaPlayer properties', async (t) => {
 
 test('can create MediaPlayerThumbnail of all types', async (t) => {
   await t.notThrowsAsync(async () => await MediaPlayerThumbnail.create("uri", "https://placehold.co/1x1.png"));
-  await t.notThrowsAsync(async () => await MediaPlayerThumbnail.create("file", "./thumbnail_test.png"));
+  await t.notThrowsAsync(async () => await MediaPlayerThumbnail.create("file", path.resolve(__dirname, "./thumbnail_test.png")));
 })
