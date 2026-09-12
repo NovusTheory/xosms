@@ -255,19 +255,31 @@ struct MPRISMediaPlayer2Player {
 #[interface(name = "org.mpris.MediaPlayer2.Player")]
 impl MPRISMediaPlayer2Player {
     async fn next(&self) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Next });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.next_button_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Next });
+        }
     }
 
     async fn previous(&self) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Previous });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.previous_button_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Previous });
+        }
     }
 
     async fn pause(&self) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Pause });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.pause_button_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Pause });
+        }
     }
 
     async fn play_pause(&self) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::PlayPause });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.pause_button_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::PlayPause });
+        }
     }
 
     async fn stop(&self) {
@@ -275,24 +287,29 @@ impl MPRISMediaPlayer2Player {
     }
 
     async fn play(&self) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Play });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.play_button_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::ButtonPressed { button: ButtonPressedType::Play });
+        }
     }
 
     async fn seek(&self, offset: i64) {
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::PositionSeeked { offset: offset  as f64 / 1_000_000.0 });
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.seek_enabled {
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::PositionSeeked { offset: offset  as f64 / 1_000_000.0 });
+        }
     }
 
     async fn set_position(&self, track_id: ObjectPath<'_>, position: i64) {
-        let _state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
-        // https://specifications.freedesktop.org/mpris/latest/Player_Interface.html
-        // > If this does not match the id of the currently-playing track, the call is ignored as "stale". 
-        //
-        // Why does xosms handle this specifically? We don't forward track_id to JS so we'll preempt the call if we know it's stale
-        /*if state.track_id != track_id.as_str() {
-            return;
-        }*/
+        let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
+        if state.seek_enabled {
+            let state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned() + &state.track_id;
+            if state_track_id != track_id.as_str() {
+                return;
+            }
 
-        let _ = self.callback_tx.try_send(PlatformBackendEvent::PositionChanged { position: position as f64 / 1_000_000.0 });
+            let _ = self.callback_tx.try_send(PlatformBackendEvent::PositionChanged { position: position as f64 / 1_000_000.0 });
+        }
     }
 
     // TODO: Implement this
@@ -360,8 +377,10 @@ impl MPRISMediaPlayer2Player {
     async fn metadata(&self) -> HashMap<String, Value<'_>> {
         let state = self.state.read().await;
 
+        let track_id = if state.track_id.trim().is_empty() { "/org/mpris/MediaPlayer2/TrackList/NoTrack".to_string() } else { "/org/xosms/MediaPlayer2/Track/".to_owned() + &state.track_id };
+
         let mut metadata = HashMap::new();
-        metadata.insert("mpris:trackid".to_owned(), Value::from(ObjectPath::try_from("/org/mpris/MediaPlayer2/track/1").unwrap()));
+        metadata.insert("mpris:trackid".to_owned(), Value::from(ObjectPath::try_from(track_id).unwrap()));
         metadata.insert("mpris:length".to_owned(), Value::from(self.timeline_state.duration.load(Ordering::Relaxed)));
         if let Some(thumbnail) = state.thumbnail.as_ref() {
             metadata.insert("mpris:artUrl".to_owned(), Value::from(thumbnail.platform_data.thumbnail.clone()));
