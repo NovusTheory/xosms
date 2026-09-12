@@ -3,43 +3,41 @@
 #[cfg(target_os = "windows")]
 #[derive(Debug)]
 pub enum WindowsPlatformError {
-    Core(windows_core::Error),
-    HResult(windows_core::HRESULT)
+  Core(windows_core::Error),
+  HResult(windows_core::HRESULT),
 }
 
 #[cfg(target_os = "linux")]
 #[derive(Debug)]
 pub enum LinuxPlatformError {
-    ZBus(zbus::Error)
+  ZBus(zbus::Error),
 }
 
 #[derive(Debug)]
 pub enum PlatformBackendError {
-    #[cfg(target_os = "windows")]
-    Windows(WindowsPlatformError),
-    #[cfg(target_os = "linux")]
-    Linux(LinuxPlatformError),
+  #[cfg(target_os = "windows")]
+  Windows(WindowsPlatformError),
+  #[cfg(target_os = "linux")]
+  Linux(LinuxPlatformError),
 }
 
 #[derive(Debug)]
 pub enum XosmsError {
-    PlatformBackend(PlatformBackendError)
+  PlatformBackend(PlatformBackendError),
 }
 
 #[cfg(target_os = "windows")]
 impl From<windows_core::Error> for XosmsError {
-    fn from(value: windows_core::Error) -> Self {
-        XosmsError::PlatformBackend(
-            PlatformBackendError::Windows(WindowsPlatformError::Core(value))
-        )
-    }
+  fn from(value: windows_core::Error) -> Self {
+    XosmsError::PlatformBackend(PlatformBackendError::Windows(WindowsPlatformError::Core(
+      value,
+    )))
+  }
 }
 
 #[cfg(target_os = "linux")]
 impl From<zbus::Error> for XosmsError {
-    fn from(value: zbus::Error) -> Self {
-        XosmsError::PlatformBackend(
-            PlatformBackendError::Linux(LinuxPlatformError::ZBus(value)
-        ))
-    }
+  fn from(value: zbus::Error) -> Self {
+    XosmsError::PlatformBackend(PlatformBackendError::Linux(LinuxPlatformError::ZBus(value)))
+  }
 }

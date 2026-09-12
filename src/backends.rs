@@ -1,5 +1,5 @@
-pub mod error;
 pub mod common;
+pub mod error;
 
 #[cfg(target_os = "windows")]
 pub mod windows;

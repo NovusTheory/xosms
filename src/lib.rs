@@ -4,19 +4,42 @@ mod backends;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use napi::{Env, Error, Status, bindgen_prelude::Promise, threadsafe_function::{ThreadsafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode}};
+use napi::{
+  Env, Error, Status,
+  bindgen_prelude::Promise,
+  threadsafe_function::{ThreadsafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode},
+};
 use napi_derive::napi;
-use tokio::{sync::{Mutex, RwLock as AsyncRwLock, mpsc::{self, Receiver}}, task::JoinHandle};
+use tokio::{
+  sync::{
+    Mutex, RwLock as AsyncRwLock,
+    mpsc::{self, Receiver},
+  },
+  task::JoinHandle,
+};
 
 use crate::backends::{PlatformBackend, PlatformThumbnailBackend, common::PlatformBackendEvent};
 
-pub type ButtonPressedCallbackTSFN = ThreadsafeFunction<ButtonPressedType, Option<Promise<()>>, ButtonPressedType, Status, false, true>;
-pub type PositionChangedCallbackTSFN = ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
-pub type PositionSeekedCallbackTSFN = ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
-pub type LoopChangedCallbackTSFN = ThreadsafeFunction<LoopType, Option<Promise<()>>, LoopType, Status, false, true>;
-pub type RateChangedCallbackTSFN = ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
-pub type ShuffleChangedCallbackTSFN = ThreadsafeFunction<bool, Option<Promise<()>>, bool, Status, false, true>;
-pub type VolumeChangedCallbackTSFN = ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
+pub type ButtonPressedCallbackTSFN = ThreadsafeFunction<
+  ButtonPressedType,
+  Option<Promise<()>>,
+  ButtonPressedType,
+  Status,
+  false,
+  true,
+>;
+pub type PositionChangedCallbackTSFN =
+  ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
+pub type PositionSeekedCallbackTSFN =
+  ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
+pub type LoopChangedCallbackTSFN =
+  ThreadsafeFunction<LoopType, Option<Promise<()>>, LoopType, Status, false, true>;
+pub type RateChangedCallbackTSFN =
+  ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
+pub type ShuffleChangedCallbackTSFN =
+  ThreadsafeFunction<bool, Option<Promise<()>>, bool, Status, false, true>;
+pub type VolumeChangedCallbackTSFN =
+  ThreadsafeFunction<f64, Option<Promise<()>>, f64, Status, false, true>;
 
 // Checks if the service name follows the required format for https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-names-bus
 fn is_valid_service_name(s: &str) -> bool {
@@ -28,12 +51,13 @@ fn is_valid_service_name(s: &str) -> bool {
     return false;
   }
 
-  s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+  s.chars()
+    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 #[derive(Default, Clone)]
 pub struct MediaPlayerState {
-  play_button_enabled: bool, 
+  play_button_enabled: bool,
   pause_button_enabled: bool,
   stop_button_enabled: bool,
   previous_button_enabled: bool,
@@ -53,7 +77,7 @@ pub struct MediaPlayerState {
   album_title: String,
   track_id: String,
 
-  thumbnail: Option<Arc<PlatformThumbnailBackend>>
+  thumbnail: Option<Arc<PlatformThumbnailBackend>>,
 }
 
 #[derive(Default)]
@@ -64,7 +88,7 @@ pub struct TSFNCallbacks {
   loop_changed: Option<LoopChangedCallbackTSFN>,
   rate_changed: Option<RateChangedCallbackTSFN>,
   shuffle_changed: Option<ShuffleChangedCallbackTSFN>,
-  volume_changed: Option<VolumeChangedCallbackTSFN>
+  volume_changed: Option<VolumeChangedCallbackTSFN>,
 }
 
 #[napi(string_enum = "lowercase")]
@@ -74,7 +98,7 @@ pub enum ButtonPressedType {
   PlayPause,
   Stop,
   Next,
-  Previous
+  Previous,
 }
 
 #[derive(Default, Clone, PartialEq)]
@@ -83,7 +107,7 @@ pub enum LoopType {
   #[default]
   None,
   Track,
-  Playlist
+  Playlist,
 }
 
 #[derive(Default, Clone, PartialEq)]
@@ -92,7 +116,7 @@ pub enum PlaybackStatus {
   Playing,
   Paused,
   #[default]
-  Stopped
+  Stopped,
 }
 
 /// A MediaPlayer instance that provides independent information and controls
@@ -105,23 +129,23 @@ pub struct MediaPlayer {
   callbacks: Arc<AsyncRwLock<TSFNCallbacks>>,
   callbacks_rx: Mutex<Option<Receiver<PlatformBackendEvent>>>,
   callbacks_task_handle: Mutex<Option<JoinHandle<()>>>,
-  fatal_proxy: Arc<ThreadsafeFunction<Error, (), (), Status, false, true>>
+  fatal_proxy: Arc<ThreadsafeFunction<Error, (), (), Status, false, true>>,
 }
 
 fn acquire_clear_poison_read<'lock, T>(lock: &'lock RwLock<T>) -> RwLockReadGuard<'lock, T> {
-  lock.read().unwrap_or_else(|poison_error| {
-    poison_error.into_inner()
-  })
+  lock
+    .read()
+    .unwrap_or_else(|poison_error| poison_error.into_inner())
 }
 
 fn acquire_clear_poison_write<'lock, T>(lock: &'lock RwLock<T>) -> RwLockWriteGuard<'lock, T> {
-  lock.write().unwrap_or_else(|poison_error| {
-    poison_error.into_inner()
-  })
+  lock
+    .write()
+    .unwrap_or_else(|poison_error| poison_error.into_inner())
 }
 
 /// Indicates whether this platform shares all instances of MediaPlayer
-/// 
+///
 /// @remarks
 /// When this method returns true the follow changes are likely
 /// - {@link MediaPlayer.activate} sends all callbacks from the platform backend to this MediaPlayer
@@ -140,26 +164,33 @@ pub fn platform_shares_media_players() -> bool {
 #[napi]
 impl MediaPlayer {
   /// Creates a MediaPlayer instance
-  /// 
+  ///
   /// @param serviceName - A unique id for the MediaPlayer which cannot be re-used while active
   /// @param identity - A display name for the MediaPlayer
   #[napi(constructor)]
   pub fn new(service_name: String, identity: String, env: &Env) -> napi::Result<Self> {
     if !is_valid_service_name(&service_name) {
-      return Err(Error::new(Status::InvalidArg, "serviceName must only contain the ASCII characters '[A-Z][a-z][0-9]_-'"));
+      return Err(Error::new(
+        Status::InvalidArg,
+        "serviceName must only contain the ASCII characters '[A-Z][a-z][0-9]_-'",
+      ));
     }
 
-    let fatal_proxy: napi::bindgen_prelude::Function<'_, (), ()> = env.create_function_from_closure("xosmsFatalExceptionProxy", |_ctx| Ok(()))?;
-    let tsfn_fatal_proxy = fatal_proxy.build_threadsafe_function::<napi::Error>().weak().build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
-      // napi-rs ctx.env.fatal_exception has a bug that doesn't call sys::napi_fatal_exception correctly so we just raw call it
-      unsafe {
-        let env_ptr = ctx.env.raw();
-        let js_error = napi::JsError::from(ctx.value).into_value(env_ptr);
-        let status = napi::sys::napi_fatal_exception(env_ptr, js_error);
-        debug_assert!(status == napi::sys::Status::napi_ok);
-      }
-      Ok(())
-    })?;
+    let fatal_proxy: napi::bindgen_prelude::Function<'_, (), ()> =
+      env.create_function_from_closure("xosmsFatalExceptionProxy", |_ctx| Ok(()))?;
+    let tsfn_fatal_proxy = fatal_proxy
+      .build_threadsafe_function::<napi::Error>()
+      .weak()
+      .build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
+        // napi-rs ctx.env.fatal_exception has a bug that doesn't call sys::napi_fatal_exception correctly so we just raw call it
+        unsafe {
+          let env_ptr = ctx.env.raw();
+          let js_error = napi::JsError::from(ctx.value).into_value(env_ptr);
+          let status = napi::sys::napi_fatal_exception(env_ptr, js_error);
+          debug_assert!(status == napi::sys::Status::napi_ok);
+        }
+        Ok(())
+      })?;
 
     let (callback_tx, callback_rx) = mpsc::channel::<PlatformBackendEvent>(128);
 
@@ -171,17 +202,22 @@ impl MediaPlayer {
       ..Default::default()
     };
     Ok(Self {
-      backend: Mutex::new(Some(PlatformBackend::new(service_name, identity, callback_tx, &state))),
+      backend: Mutex::new(Some(PlatformBackend::new(
+        service_name,
+        identity,
+        callback_tx,
+        &state,
+      ))),
       state: RwLock::new(state),
       callbacks: Arc::new(AsyncRwLock::new(TSFNCallbacks::default())),
       callbacks_rx: Mutex::new(Some(callback_rx)),
       callbacks_task_handle: Mutex::new(None),
-      fatal_proxy: Arc::new(tsfn_fatal_proxy)
+      fatal_proxy: Arc::new(tsfn_fatal_proxy),
     })
   }
 
   /// Activates this MediaPlayer by starting the platform backend
-  /// 
+  ///
   /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn activate(&self) -> Result<(), Error> {
@@ -196,98 +232,107 @@ impl MediaPlayer {
           while let Some(event) = callback_rx.recv().await {
             let callbacks = callbacks.read().await;
             match event {
-                PlatformBackendEvent::ButtonPressed { button } => {
-                  if let Some(callback) = callbacks.button_pressed.as_ref() {
-                    let result = callback.call_async(button).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::PositionChanged { position } => {
-                  if let Some(callback) = callbacks.position_changed.as_ref() {
-                    let result = callback.call_async(position).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::PositionSeeked { offset } => {
-                  if let Some(callback) = callbacks.position_seeked.as_ref() {
-                    let result = callback.call_async(offset).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::LoopChanged { loop_type } => {
-                  if let Some(callback) = callbacks.loop_changed.as_ref() {
-                    let result = callback.call_async(loop_type).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::RateChanged { rate } => {
-                  if let Some(callback) = callbacks.rate_changed.as_ref() {
-                    let result = callback.call_async(rate).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::ShuffleChanged { shuffle } => {
-                  if let Some(callback) = callbacks.shuffle_changed.as_ref() {
-                    let result = callback.call_async(shuffle).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
-                    }
-                  }
-                },
-                PlatformBackendEvent::VolumeChanged { volume } => {
-                  if let Some(callback) = callbacks.volume_changed.as_ref() {
-                    let result = callback.call_async(volume).await;
-                    if let Ok(Some(promise)) = result {
-                      if let Err(err) = promise.await {
-                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                      }
+              PlatformBackendEvent::ButtonPressed { button } => {
+                if let Some(callback) = callbacks.button_pressed.as_ref() {
+                  let result = callback.call_async(button).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                     }
                   }
                 }
+              }
+              PlatformBackendEvent::PositionChanged { position } => {
+                if let Some(callback) = callbacks.position_changed.as_ref() {
+                  let result = callback.call_async(position).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
+              PlatformBackendEvent::PositionSeeked { offset } => {
+                if let Some(callback) = callbacks.position_seeked.as_ref() {
+                  let result = callback.call_async(offset).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
+              PlatformBackendEvent::LoopChanged { loop_type } => {
+                if let Some(callback) = callbacks.loop_changed.as_ref() {
+                  let result = callback.call_async(loop_type).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
+              PlatformBackendEvent::RateChanged { rate } => {
+                if let Some(callback) = callbacks.rate_changed.as_ref() {
+                  let result = callback.call_async(rate).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
+              PlatformBackendEvent::ShuffleChanged { shuffle } => {
+                if let Some(callback) = callbacks.shuffle_changed.as_ref() {
+                  let result = callback.call_async(shuffle).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
+              PlatformBackendEvent::VolumeChanged { volume } => {
+                if let Some(callback) = callbacks.volume_changed.as_ref() {
+                  let result = callback.call_async(volume).await;
+                  if let Ok(Some(promise)) = result {
+                    if let Err(err) = promise.await {
+                      fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
+                    }
+                  }
+                }
+              }
             }
           }
         });
         *callbacks_task_handle = Some(join_handle);
       }
 
-      backend.activate().await.map_err(|err: backends::error::XosmsError| {
-        Error::new(Status::GenericFailure, format!("Failed to activate backend {:?}", err))
-      })?;
+      backend
+        .activate()
+        .await
+        .map_err(|err: backends::error::XosmsError| {
+          Error::new(
+            Status::GenericFailure,
+            format!("Failed to activate backend {:?}", err),
+          )
+        })?;
     } else {
-      return Err(Error::new(Status::GenericFailure, "This MediaPlayer has been disposed and cannot be used"));
+      return Err(Error::new(
+        Status::GenericFailure,
+        "This MediaPlayer has been disposed and cannot be used",
+      ));
     }
 
     Ok(())
   }
 
   /// Deactivates this MediaPlayer by stopping the platform backend
-  /// 
+  ///
   /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn deactivate(&self) -> Result<(), Error> {
-    let mut callbacks_task = self.callbacks_task_handle.lock().await ;
+    let mut callbacks_task = self.callbacks_task_handle.lock().await;
     if let Some(callbacks_task_handle) = callbacks_task.take() {
       callbacks_task_handle.abort();
     }
@@ -295,50 +340,72 @@ impl MediaPlayer {
     let mut backend = self.backend.lock().await;
     if let Some(backend) = backend.as_mut() {
       backend.deactivate().await.map_err(|err| {
-        Error::new(Status::GenericFailure, format!("Failed to deactivate backend {:?}", err))
+        Error::new(
+          Status::GenericFailure,
+          format!("Failed to deactivate backend {:?}", err),
+        )
       })?;
     } else {
-      return Err(Error::new(Status::GenericFailure, "This MediaPlayer has been disposed and cannot be used"));
+      return Err(Error::new(
+        Status::GenericFailure,
+        "This MediaPlayer has been disposed and cannot be used",
+      ));
     }
 
     Ok(())
   }
 
   /// Updates the platform backend with the latest state
-  /// 
+  ///
   /// @remarks Behavior differs when {@link platformSharesMediaPlayers} is true
   #[napi]
   pub async fn update(&self) -> Result<(), Error> {
     let backend = self.backend.lock().await;
     let state_clone = {
-      let state = self.state.read().map_err(|_err| {
-        Error::new(Status::GenericFailure, "Failed to read state")
-      })?;
+      let state = self
+        .state
+        .read()
+        .map_err(|_err| Error::new(Status::GenericFailure, "Failed to read state"))?;
       state.clone()
     };
     if let Some(backend) = backend.as_ref() {
       backend.update(state_clone).await.map_err(|err| {
-        Error::new(Status::GenericFailure, format!("Failed to update backend {:?}", err))
+        Error::new(
+          Status::GenericFailure,
+          format!("Failed to update backend {:?}", err),
+        )
       })?;
     } else {
-      return Err(Error::new(Status::GenericFailure, "This MediaPlayer has been disposed and cannot be used"));
+      return Err(Error::new(
+        Status::GenericFailure,
+        "This MediaPlayer has been disposed and cannot be used",
+      ));
     }
 
     Ok(())
   }
 
   /// Sets the timeline data
-  /// 
+  ///
   /// This function does not require {@link MediaPlayer.update} to be called and immediately sends changes to the platform backend
   #[napi]
   pub async fn set_timeline(&self, duration: f64, position: f64) -> Result<(), Error> {
     let mut backend = self.backend.lock().await;
     if let Some(backend) = backend.as_mut() {
-      backend.set_timeline(duration, position).await.map_err(|err| {
-        Error::new(Status::GenericFailure, format!("Failed to call set_timeline {:?}", err))
-      })?;
+      backend
+        .set_timeline(duration, position)
+        .await
+        .map_err(|err| {
+          Error::new(
+            Status::GenericFailure,
+            format!("Failed to call set_timeline {:?}", err),
+          )
+        })?;
     } else {
-      return Err(Error::new(Status::GenericFailure, "This MediaPlayer has been disposed and cannot be used"));
+      return Err(Error::new(
+        Status::GenericFailure,
+        "This MediaPlayer has been disposed and cannot be used",
+      ));
     }
 
     Ok(())
@@ -346,37 +413,46 @@ impl MediaPlayer {
 
   // napi-rs doesn't know how to unwrap the custom defined types
   /// Sets the callback when the media service sends a button press
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (button: ButtonPressedType) => Promise<void> | void")]
-  pub fn set_button_pressed_callback(&self, callback: ButtonPressedCallbackTSFN) -> Result<(), Error> {
+  pub fn set_button_pressed_callback(
+    &self,
+    callback: ButtonPressedCallbackTSFN,
+  ) -> Result<(), Error> {
     self.callbacks.blocking_write().button_pressed = Some(callback);
 
     Ok(())
   }
 
   /// Sets the callback when the media service sends a position change
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (position: number) => Promise<void> | void")]
-  pub fn set_position_changed_callback(&self, callback: PositionChangedCallbackTSFN) -> Result<(), Error> {
+  pub fn set_position_changed_callback(
+    &self,
+    callback: PositionChangedCallbackTSFN,
+  ) -> Result<(), Error> {
     self.callbacks.blocking_write().position_changed = Some(callback);
 
     Ok(())
   }
 
   /// Sets the callback when the media service sends a position seek
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (offset: number) => Promise<void> | void")]
-  pub fn set_position_seeked_callback(&self, callback: PositionSeekedCallbackTSFN) -> Result<(), Error> {
+  pub fn set_position_seeked_callback(
+    &self,
+    callback: PositionSeekedCallbackTSFN,
+  ) -> Result<(), Error> {
     self.callbacks.blocking_write().position_seeked = Some(callback);
 
     Ok(())
   }
 
   /// Sets the callback when the media service sends a loop change
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (loop: LoopType) => Promise<void> | void")]
   pub fn set_loop_changed_callback(&self, callback: LoopChangedCallbackTSFN) -> Result<(), Error> {
@@ -386,7 +462,7 @@ impl MediaPlayer {
   }
 
   /// Sets the callback when the media service sends a playback rate change
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (rate: number) => Promise<void> | void")]
   pub fn set_rate_changed_callback(&self, callback: RateChangedCallbackTSFN) -> Result<(), Error> {
@@ -396,25 +472,30 @@ impl MediaPlayer {
   }
 
   /// Sets the callback when the media service sends a shuffle change
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (shuffle: boolean) => Promise<void> | void")]
-  pub fn set_shuffle_changed_callback(&self, callback: ShuffleChangedCallbackTSFN) -> Result<(), Error> {
+  pub fn set_shuffle_changed_callback(
+    &self,
+    callback: ShuffleChangedCallbackTSFN,
+  ) -> Result<(), Error> {
     self.callbacks.blocking_write().shuffle_changed = Some(callback);
 
     Ok(())
   }
 
   /// Sets the callback when the media service sends a volume change
-  /// 
+  ///
   /// If this callback is a {@link Promise} xosms will wait for it to resolve
   #[napi(ts_args_type = "callback: (volume: number) => Promise<void> | void")]
-  pub fn set_volume_changed_callback(&self, callback: VolumeChangedCallbackTSFN) -> Result<(), Error> {
+  pub fn set_volume_changed_callback(
+    &self,
+    callback: VolumeChangedCallbackTSFN,
+  ) -> Result<(), Error> {
     self.callbacks.blocking_write().volume_changed = Some(callback);
 
     Ok(())
   }
-
 
   #[napi(getter)]
   pub fn get_play_button_enabled(&self) -> bool {
@@ -426,7 +507,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).play_button_enabled = enabled;
   }
 
-
   #[napi(getter)]
   pub fn get_pause_button_enabled(&self) -> bool {
     acquire_clear_poison_read(&self.state).pause_button_enabled
@@ -436,7 +516,6 @@ impl MediaPlayer {
   pub fn set_pause_button_enabled(&self, enabled: bool) {
     acquire_clear_poison_write(&self.state).pause_button_enabled = enabled;
   }
-
 
   #[napi(getter)]
   pub fn get_stop_button_enabled(&self) -> bool {
@@ -448,7 +527,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).stop_button_enabled = enabled;
   }
 
-  
   #[napi(getter)]
   pub fn get_previous_button_enabled(&self) -> bool {
     acquire_clear_poison_read(&self.state).previous_button_enabled
@@ -458,7 +536,6 @@ impl MediaPlayer {
   pub fn set_previous_button_enabled(&self, enabled: bool) {
     acquire_clear_poison_write(&self.state).previous_button_enabled = enabled;
   }
-
 
   #[napi(getter)]
   pub fn get_next_button_enabled(&self) -> bool {
@@ -470,8 +547,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).next_button_enabled = enabled;
   }
 
-
-
   #[napi(getter)]
   pub fn get_seek_enabled(&self) -> bool {
     acquire_clear_poison_read(&self.state).seek_enabled
@@ -482,7 +557,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).seek_enabled = enabled;
   }
 
-  
   #[napi(getter)]
   pub fn get_fullscreen(&self) -> bool {
     acquire_clear_poison_read(&self.state).fullscreen
@@ -492,7 +566,6 @@ impl MediaPlayer {
   pub fn set_fullscreen(&self, enabled: bool) {
     acquire_clear_poison_write(&self.state).fullscreen = enabled;
   }
-
 
   #[napi(getter)]
   pub fn get_playback_rate(&self) -> f64 {
@@ -504,7 +577,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).playback_rate = rate;
   }
 
-
   #[napi(getter)]
   pub fn get_minimum_playback_rate(&self) -> f64 {
     acquire_clear_poison_read(&self.state).minimum_playback_rate
@@ -514,7 +586,6 @@ impl MediaPlayer {
   pub fn set_minimum_playback_rate(&self, rate: f64) {
     acquire_clear_poison_write(&self.state).minimum_playback_rate = rate;
   }
-
 
   #[napi(getter)]
   pub fn get_maximum_playback_rate(&self) -> f64 {
@@ -526,7 +597,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).maximum_playback_rate = rate;
   }
 
-  
   #[napi(getter)]
   pub fn get_shuffle(&self) -> bool {
     acquire_clear_poison_read(&self.state).shuffle
@@ -536,7 +606,6 @@ impl MediaPlayer {
   pub fn set_shuffle(&self, enabled: bool) {
     acquire_clear_poison_write(&self.state).shuffle = enabled;
   }
-
 
   #[napi(getter)]
   pub fn get_loop(&self) -> LoopType {
@@ -548,7 +617,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).r#loop = r#loop;
   }
 
-
   #[napi(getter)]
   pub fn get_volume(&self) -> f64 {
     acquire_clear_poison_read(&self.state).volume
@@ -559,17 +627,17 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).volume = value;
   }
 
-
   #[napi(getter)]
   pub fn get_playback_status(&self) -> PlaybackStatus {
-    acquire_clear_poison_read(&self.state).playback_status.clone()
+    acquire_clear_poison_read(&self.state)
+      .playback_status
+      .clone()
   }
 
   #[napi(setter)]
   pub fn set_playback_status(&self, status: PlaybackStatus) {
     acquire_clear_poison_write(&self.state).playback_status = status;
   }
-
 
   #[napi(getter)]
   pub fn get_title(&self) -> String {
@@ -581,7 +649,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).title = value;
   }
 
-
   #[napi(getter)]
   pub fn get_artist(&self) -> Vec<String> {
     acquire_clear_poison_read(&self.state).artist.clone()
@@ -591,7 +658,6 @@ impl MediaPlayer {
   pub fn set_artist(&self, value: Vec<String>) {
     acquire_clear_poison_write(&self.state).artist = value;
   }
-
 
   #[napi(getter)]
   pub fn get_album_title(&self) -> String {
@@ -603,7 +669,6 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).album_title = value;
   }
 
-
   #[napi(getter)]
   pub fn get_track_id(&self) -> String {
     acquire_clear_poison_read(&self.state).track_id.clone()
@@ -614,13 +679,12 @@ impl MediaPlayer {
     acquire_clear_poison_write(&self.state).track_id = value;
   }
 
-  
   #[napi(getter)]
   pub fn get_thumbnail(&self) -> Option<MediaPlayerThumbnail> {
     if let Some(platform_thumbnail) = acquire_clear_poison_read(&self.state).thumbnail.as_ref() {
       return Some(MediaPlayerThumbnail {
         thumbnail_type: platform_thumbnail.r#type,
-        backend: platform_thumbnail.clone()
+        backend: platform_thumbnail.clone(),
       });
     }
 
@@ -636,7 +700,6 @@ impl MediaPlayer {
     }
   }
 
-
   /// Disposes this MediaPlayer releasing all native resources
   #[napi]
   pub fn dispose(&self) {
@@ -648,29 +711,39 @@ impl MediaPlayer {
 #[napi(string_enum = "lowercase")]
 pub enum MediaPlayerThumbnailType {
   File,
-  Uri
+  Uri,
 }
 
 /// A MediaPlayerThumbnail instance which may hold native resources for the platform to use on a MediaPlayer
 #[napi]
 pub struct MediaPlayerThumbnail {
   thumbnail_type: MediaPlayerThumbnailType,
-  backend: Arc<PlatformThumbnailBackend>
+  backend: Arc<PlatformThumbnailBackend>,
 }
 
 #[napi]
 impl MediaPlayerThumbnail {
   /// Creates a MediaPlayerThumbnail instance
-  /// 
+  ///
   /// @param thumbnailType - The type of thumbnail being created
   /// @param thumbnail - A uri or file path pointing to the thumbnail
   #[napi(factory)]
-  pub async fn create(thumbnail_type: MediaPlayerThumbnailType, thumbnail: String) -> Result<Self, Error> {
+  pub async fn create(
+    thumbnail_type: MediaPlayerThumbnailType,
+    thumbnail: String,
+  ) -> Result<Self, Error> {
     Ok(Self {
       thumbnail_type,
-      backend: Arc::new(PlatformThumbnailBackend::new(thumbnail_type, thumbnail).await.map_err(|err| {
-        Error::new(Status::GenericFailure, format!("Failed to create thumbnail backend {:?}", err))
-      })?)
+      backend: Arc::new(
+        PlatformThumbnailBackend::new(thumbnail_type, thumbnail)
+          .await
+          .map_err(|err| {
+            Error::new(
+              Status::GenericFailure,
+              format!("Failed to create thumbnail backend {:?}", err),
+            )
+          })?,
+      ),
     })
   }
 
@@ -683,7 +756,7 @@ impl MediaPlayerThumbnail {
 #[cfg(target_os = "macos")]
 #[repr(C)]
 struct RunLoopPump {
-    handle: libuv_sys2::uv_check_t,
+  handle: libuv_sys2::uv_check_t,
 }
 
 #[cfg(target_os = "macos")]
@@ -703,14 +776,14 @@ pub fn init(env: Env) -> napi::bindgen_prelude::Result<()> {
     let app = NSApplication::sharedApplication(mtm);
     // Xosms is being initialized in an already running NSApplication environment e.g. Electron. We don't need to setup an event loop pump
     if app.isRunning() {
-      return Ok(())
+      return Ok(());
     }
 
     if let Ok(uv_loop_ptr) = env.get_uv_event_loop() {
       let uv_loop_ptr: *mut libuv_sys2::uv_loop_s = uv_loop_ptr as *mut libuv_sys2::uv_loop_s;
 
       let pump = Box::new(RunLoopPump {
-        handle: unsafe { std::mem::zeroed() }
+        handle: unsafe { std::mem::zeroed() },
       });
       let pump_ptr = Box::into_raw(pump);
       let check_handle_ptr = unsafe { std::ptr::addr_of_mut!((*pump_ptr).handle) };
@@ -720,8 +793,8 @@ pub fn init(env: Env) -> napi::bindgen_prelude::Result<()> {
         if init_status != 0 {
           let _ = Box::from_raw(pump_ptr);
           return Err(Error::new(
-              Status::GenericFailure,
-              format!("Failed to initialize uv_check: {}", init_status),
+            Status::GenericFailure,
+            format!("Failed to initialize uv_check: {}", init_status),
           ));
         }
 
@@ -730,8 +803,8 @@ pub fn init(env: Env) -> napi::bindgen_prelude::Result<()> {
         let start_status = libuv_sys2::uv_check_start(check_handle_ptr, Some(run_event_loop));
         if start_status != 0 {
           return Err(Error::new(
-              Status::GenericFailure,
-              format!("Failed to start uv_check: {}", start_status),
+            Status::GenericFailure,
+            format!("Failed to start uv_check: {}", start_status),
           ));
         }
 
@@ -740,9 +813,15 @@ pub fn init(env: Env) -> napi::bindgen_prelude::Result<()> {
 
       return Ok(());
     }
-    
-    return Err(Error::new(Status::GenericFailure, "Could not setup platform event loop"));
+
+    return Err(Error::new(
+      Status::GenericFailure,
+      "Could not setup platform event loop",
+    ));
   } else {
-    return Err(Error::new(Status::GenericFailure, "This platform requires usage from the main thread!"));
+    return Err(Error::new(
+      Status::GenericFailure,
+      "This platform requires usage from the main thread!",
+    ));
   }
 }

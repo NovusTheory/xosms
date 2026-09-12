@@ -7,9 +7,11 @@ fn main() {
   if target_os == "windows" {
     println!("cargo:rerun-if-changed=src/backends/windows/bindings-filter.txt");
     let args = [
-        "--out", "src/backends/windows/bindings.rs",
-        "--flat",
-        "--filter-file", "src/backends/windows/bindings-filter.txt",
+      "--out",
+      "src/backends/windows/bindings.rs",
+      "--flat",
+      "--filter-file",
+      "src/backends/windows/bindings-filter.txt",
     ];
     windows_bindgen::bindgen(args);
   }
