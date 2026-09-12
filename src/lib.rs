@@ -1,3 +1,5 @@
+#![allow(clippy::collapsible_if)]
+
 mod backends;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -161,11 +163,13 @@ impl MediaPlayer {
 
     let (callback_tx, callback_rx) = mpsc::channel::<PlatformBackendEvent>(128);
 
-    let mut state = MediaPlayerState::default();
-    // Replace with https://github.com/rust-lang/rust/issues/132162 when available
-    state.playback_rate = 1.0;
-    state.minimum_playback_rate = 1.0;
-    state.maximum_playback_rate = 1.0;
+    // Replace with https://github.com/rust-lang/rust/issues/132162 when available?
+    let state = MediaPlayerState {
+      playback_rate: 1.0,
+      minimum_playback_rate: 1.0,
+      maximum_playback_rate: 1.0,
+      ..Default::default()
+    };
     Ok(Self {
       backend: Mutex::new(Some(PlatformBackend::new(service_name, identity, callback_tx, &state))),
       state: RwLock::new(state),
@@ -195,11 +199,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::ButtonPressed { button } => {
                   if let Some(callback) = callbacks.button_pressed.as_ref() {
                     let result = callback.call_async(button).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -207,11 +209,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::PositionChanged { position } => {
                   if let Some(callback) = callbacks.position_changed.as_ref() {
                     let result = callback.call_async(position).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -219,11 +219,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::PositionSeeked { offset } => {
                   if let Some(callback) = callbacks.position_seeked.as_ref() {
                     let result = callback.call_async(offset).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -231,11 +229,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::LoopChanged { loop_type } => {
                   if let Some(callback) = callbacks.loop_changed.as_ref() {
                     let result = callback.call_async(loop_type).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -243,11 +239,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::RateChanged { rate } => {
                   if let Some(callback) = callbacks.rate_changed.as_ref() {
                     let result = callback.call_async(rate).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -255,11 +249,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::ShuffleChanged { shuffle } => {
                   if let Some(callback) = callbacks.shuffle_changed.as_ref() {
                     let result = callback.call_async(shuffle).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
@@ -267,11 +259,9 @@ impl MediaPlayer {
                 PlatformBackendEvent::VolumeChanged { volume } => {
                   if let Some(callback) = callbacks.volume_changed.as_ref() {
                     let result = callback.call_async(volume).await;
-                    if let Ok(promise_result) = result {
-                      if let Some(promise) = promise_result {
-                        if let Err(err) = promise.await {
-                          fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
-                        }
+                    if let Ok(Some(promise)) = result {
+                      if let Err(err) = promise.await {
+                        fatal_proxy.call(err, ThreadsafeFunctionCallMode::Blocking);
                       }
                     }
                   }
