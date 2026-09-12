@@ -247,7 +247,10 @@ jobs:
           image: ${{ steps.docker.outputs.IMAGE }}
           name: test-binding
           options: -v ${{ steps.docker.outputs.PNPM_STORE_PATH }}:${{ steps.docker.outputs.PNPM_STORE_PATH }} -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}
-          args: npm run test
+          args: >
+            sh -c "apt-get update &&
+                   apt-get install -y --no-install-recommends dbus &&
+                   dbus-run-session -- npm run test"
   publish:
     name: Publish
     runs-on: ubuntu-latest
