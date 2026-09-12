@@ -151,11 +151,12 @@ impl MediaPlayer {
 
     let fatal_proxy: napi::bindgen_prelude::Function<'_, (), ()> = env.create_function_from_closure("xosmsFatalExceptionProxy", |_ctx| Ok(()))?;
     let tsfn_fatal_proxy = fatal_proxy.build_threadsafe_function::<napi::Error>().weak().build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
-      // napi-rs ctx.env.fatal_exception doesn't actually call napi_fatal_exception and I'm certain this is an upstream bug
+      // napi-rs ctx.env.fatal_exception has a bug that doesn't call sys::napi_fatal_exception correctly so we just raw call it
       unsafe {
         let env_ptr = ctx.env.raw();
         let js_error = napi::JsError::from(ctx.value).into_value(env_ptr);
-        assert!(napi::sys::napi_fatal_exception(env_ptr, js_error) == napi::sys::Status::napi_ok);
+        let status = napi::sys::napi_fatal_exception(env_ptr, js_error);
+        debug_assert!(status == napi::sys::Status::napi_ok);
       }
       Ok(())
     })?;
