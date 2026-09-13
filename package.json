@@ -1,11 +1,11 @@
 {
   "name": "xosms",
-  "version": "0.7.0",
+  "version": "0.7.0-rc.1",
   "description": "A native cross platform media service library",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": {
-    "url": "git+ssh://git@github.com/novustheory/xosms.git",
+    "url": "https://github.com/NovusTheory/xosms",
     "type": "git"
   },
   "license": "Apache-2.0",
@@ -41,7 +41,7 @@
     ]
   },
   "engines": {
-    "node": ">= 10.16.0 < 11 || >= 11.8.0 < 12 || >= 12.0.0"
+    "node": ">= 10.17.0 < 11 || >= 12.11.0 < 12 || >= 13.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -55,7 +55,7 @@
     "format:oxfmt": "oxfmt",
     "format:rs": "cargo fmt",
     "lint": "oxlint",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepublishOnly": "napi prepublish -t npm --skip-optional-publish",
     "test": "ava",
     "version": "napi version",
     "createnpmdirs": "napi create-npm-dirs"

@@ -266,7 +266,10 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
           cache: pnpm
+      - name: Upgrade npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: pnpm install
       - name: Download all artifacts
@@ -285,11 +288,15 @@ jobs:
           npm config set provenance true
           if git log -1 --pretty=%B | grep "^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$";
           then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+            for dir in npm/*/; do
+              (cd "$dir" && npm stage publish --access public)
+            done
             npm stage publish --access public
           elif git log -1 --pretty=%B | grep "^v\?[0-9]\+\.[0-9]\+\.[0-9]\+";
           then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+            for dir in npm/*/; do
+              (cd "$dir" && npm stage publish --tag next --access public)
+            done
             npm stage publish --tag next --access public
           else
             echo "Not a release, skipping publish"
