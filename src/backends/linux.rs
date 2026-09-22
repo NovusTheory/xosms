@@ -6,6 +6,7 @@ use std::{
   },
 };
 
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use tokio::{
   sync::{RwLock, mpsc::Sender},
   time::Instant,
@@ -485,7 +486,8 @@ impl MPRISMediaPlayer2Player {
   async fn set_position(&self, track_id: ObjectPath<'_>, position: i64) {
     let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
     if state.seek_enabled {
-      let state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned() + &state.track_id;
+      let mut state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned();
+      URL_SAFE_NO_PAD.encode_string(&state.track_id, &mut state_track_id);
       if state_track_id != track_id.as_str() {
         return;
       }
@@ -572,7 +574,9 @@ impl MPRISMediaPlayer2Player {
     let track_id = if state.track_id.trim().is_empty() {
       "/org/mpris/MediaPlayer2/TrackList/NoTrack".to_string()
     } else {
-      "/org/xosms/MediaPlayer2/Track/".to_owned() + &state.track_id
+      let mut full_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned();
+      URL_SAFE_NO_PAD.encode_string(&state.track_id, &mut full_track_id);
+      full_track_id
     };
 
     let mut metadata = HashMap::new();
