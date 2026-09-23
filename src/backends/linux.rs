@@ -6,7 +6,6 @@ use std::{
   },
 };
 
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use tokio::{
   sync::{RwLock, mpsc::Sender},
   time::Instant,
@@ -406,6 +405,20 @@ struct MPRISMediaPlayer2Player {
   callback_tx: Arc<Sender<PlatformBackendEvent>>,
 }
 
+fn escape_object_path_string(s: &String) -> String {
+  let mut out = String::with_capacity(s.len() * 3);
+  for &b in s.as_bytes() {
+    if b.is_ascii_alphanumeric() {
+      out.push(b as char);
+    } else {
+      out.push('_');
+      out.push(char::from_digit((b >> 4) as u32, 16).unwrap());
+      out.push(char::from_digit((b & 0x0f) as u32, 16).unwrap());
+    }
+  }
+  out
+}
+
 // https://specifications.freedesktop.org/mpris/latest/Player_Interface.html
 #[interface(name = "org.mpris.MediaPlayer2.Player")]
 impl MPRISMediaPlayer2Player {
@@ -486,8 +499,7 @@ impl MPRISMediaPlayer2Player {
   async fn set_position(&self, track_id: ObjectPath<'_>, position: i64) {
     let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
     if state.seek_enabled {
-      let mut state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned();
-      URL_SAFE_NO_PAD.encode_string(&state.track_id, &mut state_track_id);
+      let state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned() + &escape_object_path_string(&state.track_id);
       if state_track_id != track_id.as_str() {
         return;
       }
@@ -574,9 +586,7 @@ impl MPRISMediaPlayer2Player {
     let track_id = if state.track_id.trim().is_empty() {
       "/org/mpris/MediaPlayer2/TrackList/NoTrack".to_string()
     } else {
-      let mut full_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned();
-      URL_SAFE_NO_PAD.encode_string(&state.track_id, &mut full_track_id);
-      full_track_id
+      "/org/xosms/MediaPlayer2/Track/".to_owned() + &escape_object_path_string(&state.track_id)
     };
 
     let mut metadata = HashMap::new();
