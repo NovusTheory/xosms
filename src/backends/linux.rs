@@ -499,7 +499,8 @@ impl MPRISMediaPlayer2Player {
   async fn set_position(&self, track_id: ObjectPath<'_>, position: i64) {
     let state: tokio::sync::RwLockReadGuard<'_, MediaPlayerState> = self.state.read().await;
     if state.seek_enabled {
-      let state_track_id = "/org/xosms/MediaPlayer2/Track/".to_owned() + &escape_object_path_string(&state.track_id);
+      let state_track_id =
+        "/org/xosms/MediaPlayer2/Track/".to_owned() + &escape_object_path_string(&state.track_id);
       if state_track_id != track_id.as_str() {
         return;
       }
