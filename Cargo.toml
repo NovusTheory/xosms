@@ -12,7 +12,7 @@ napi-derive = "3.6"
 tokio = { version = "1.53.1", features = ["sync", "time"] }
 
 [dependencies.napi]
-version = "3.12"
+version = "3.14"
 features = ["napi5", "async"]
 
 [target.'cfg(target_os = "linux")'.dependencies]

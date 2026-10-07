@@ -182,13 +182,7 @@ impl MediaPlayer {
       .build_threadsafe_function::<napi::Error>()
       .weak()
       .build_callback(|ctx: ThreadsafeCallContext<napi::Error>| {
-        // napi-rs ctx.env.fatal_exception has a bug that doesn't call sys::napi_fatal_exception correctly so we just raw call it
-        unsafe {
-          let env_ptr = ctx.env.raw();
-          let js_error = napi::JsError::from(ctx.value).into_value(env_ptr);
-          let status = napi::sys::napi_fatal_exception(env_ptr, js_error);
-          debug_assert!(status == napi::sys::Status::napi_ok);
-        }
+        ctx.env.fatal_exception(ctx.value);
         Ok(())
       })?;
 
